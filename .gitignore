@@ -1,2 +1,15 @@
 
 proj.pro.user
+
+/src/xi-qt.vcxproj
+/src/xi-qt.vcxproj.filters
+/src/src.vcxproj
+/src/src.vcxproj.filters
+/src/src.vcxproj.user
+/src/src.sln
+/src/xi-qt_resource.rc
+
+/src/debug
+/src/GeneratedFiles
+/src/release
+/src/x64
