@@ -17,3 +17,4 @@ proj.pro.user
 .vs/xi-qt/v15/Browse.VC.db
 .vs/xi-qt/v15/Browse.VC.opendb
 xi-qt.sln
+*.ipch
