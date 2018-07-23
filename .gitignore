@@ -13,3 +13,7 @@ proj.pro.user
 /src/GeneratedFiles
 /src/release
 /src/x64
+.qmake.stash
+.vs/xi-qt/v15/Browse.VC.db
+.vs/xi-qt/v15/Browse.VC.opendb
+xi-qt.sln
