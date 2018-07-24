@@ -7,8 +7,8 @@
 
 #include "edit_view.h"
 #include "edit_window.h"
-#include "shortcuts.h"
 #include "perference.h"
+#include "shortcuts.h"
 
 namespace xi {
 
@@ -47,7 +47,7 @@ void EditWindow::openFile() {
     if (dlg->exec() == QDialog::Accepted) {
         filePathList = dlg->selectedFiles();
     } else {
-        dlg->close();
+        // dlg->close();
         return;
     }
     openFile(QString(), filePathList.front());
@@ -75,7 +75,7 @@ void EditWindow::saveFile(bool saveAs) {
         if (dlg->exec() == QDialog::Accepted) {
             file->setPath(dlg->selectedFiles().front());
         } else {
-            dlg->close();
+            // dlg->close();
             return;
         }
     }
@@ -244,7 +244,7 @@ void EditWindow::availableThemesHandler(const QVector<QString> &themes) {
 }
 
 void EditWindow::themeChangedHandler(const Theme &theme) {
-	Perference::shared()->theme(theme);
+    Perference::shared()->theme(theme);
     auto i = m_router.constBegin();
     while (i != m_router.constEnd()) {
         auto viewId = i.key();

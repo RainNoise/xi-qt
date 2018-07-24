@@ -14,12 +14,18 @@ class Perference {
 public:
     static Perference *shared();
 
-    std::shared_ptr<Theme> theme();
+    Theme theme() const;
     void theme(const Theme &theme);
+
+    //Keymap keymap() const;
+    //void keymap(const Keymap &keymap);
+
+    //Settings settings() const;
+    //void settings(const Settings &settings);
 
 private:
     Perference();
-    std::shared_ptr<Theme> m_theme;
+    Theme m_theme;
 };
 
 } // namespace xi

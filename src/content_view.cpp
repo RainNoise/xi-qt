@@ -107,8 +107,9 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     auto theme = Perference::shared()->theme();
 
 	// for debug
-	renderer.drawRect(rect());
-    renderer.fillRect(rect(), theme->background());
+	//renderer.drawRect(rect());
+
+    renderer.fillRect(rect(), theme.background());
 
 	//m_scrollOrigin.setY(-40);	// down
 	//m_scrollOrigin.setY(285);	// up
@@ -139,15 +140,6 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
 	m_firstLine = first;
 	qreal maxLineWidth = 0;
 
-	QColor selectionColor;
-	QColor selColor;
-	QColor selArgb;
-	QColor highlightColor;
-	QColor highlightArgb;
-	QColor foregroundArgb;
-	QColor gutterArgb;
-    QColor cursorColor = theme->caret();
-
 	// first pass: create TextLine objects and also draw background rects
 	for (auto lineIx = first; lineIx <= last; ++lineIx) {
 		auto relLineIx = lineIx - first;
@@ -157,8 +149,8 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
 			continue;
 		}
 		auto builder = std::make_shared<TextLineBuilder>(line->getText(), font);
-		builder->setFgColor(foregroundArgb);
-		styleMap->applyStyles(builder, line->getStyles(), selArgb, highlightArgb);
+        builder->setFgColor(theme.foreground());
+        styleMap->applyStyles(builder, line->getStyles(), theme.selection(), theme.highlight());
 		auto textLine = builder->build();
 		textLines.append(textLine);
 		maxLineWidth = std::max(maxLineWidth, textLine->width());
@@ -199,7 +191,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
 			auto cursors = line->getCursor().get();
 			foreach(int cursor, *cursors) {
 				auto x0 = xOff + textLine->indexTox(cursor) - 0.5f;
-				Painter::drawCursor(renderer, x0, y0, 2, linespace, cursorColor);
+                Painter::drawCursor(renderer, x0, y0, 2, linespace, theme.caret());
 			}
 		}
 	}

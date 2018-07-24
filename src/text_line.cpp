@@ -60,13 +60,12 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
     int leading = textline->metrics()->leading();
     auto lineWidth = textline->metrics()->width(m_text); // slow
 
-    //auto lineWidth = 10000;
     qreal height = 0;
     QVector<QTextLayout::FormatRange> overrides;
     QTextLayout::FormatRange fmt;
     QTextCharFormat cfmt;
     cfmt.setFont(m_font->getFont());
-    cfmt.setForeground(QBrush(theme->foreground())); // 255, 215, 0 // 255, 128, 0 // 189, 183, 107 // 248, 248, 186 // Qt::black
+    cfmt.setForeground(QBrush(theme.foreground())); // 255, 215, 0 // 255, 128, 0 // 189, 183, 107 // 248, 248, 186 // Qt::black
     fmt.start = 0;
     fmt.length = m_text.length();
     fmt.format = cfmt;
@@ -78,7 +77,6 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
         QTextLine qline = textline->layout()->createLine();
         if (!qline.isValid())
             break;
-
         qline.setLineWidth(lineWidth);
         height += leading;
         qline.setPosition(QPointF(0, height));

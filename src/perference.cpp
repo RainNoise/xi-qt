@@ -3,7 +3,6 @@
 namespace xi {
 
 Perference::Perference() {
-    m_theme = std::make_shared<Theme>();
 }
 
 Perference *Perference::shared() {
@@ -11,13 +10,12 @@ Perference *Perference::shared() {
     return &perference;
 }
 
-std::shared_ptr<xi::Theme> Perference::theme()
-{
+Theme Perference::theme() const {
 	return m_theme;
 }
 
 void Perference::theme(const Theme &theme) {
-    *m_theme = theme;
+    m_theme = theme;
 }
 
 } // namespace xi
