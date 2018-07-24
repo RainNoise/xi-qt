@@ -18,6 +18,7 @@
 #include "content_view.h"
 #include "edit_window.h"
 #include "text_line.h"
+#include "perference.h"
 
 namespace xi {
 
@@ -83,8 +84,10 @@ void EditView::scrollHandler(int line, int column) {
     }
 }
 
-void EditView::themeChangedHandler(const QString &name, const Theme &theme) {
-
+void EditView::themeChangedHandler() {
+    // auto theme = Perference::shared()->theme();
+    // nothing
+    // scrollbar
 }
 
 void EditView::resizeEvent(QResizeEvent *event) {

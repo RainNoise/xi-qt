@@ -59,7 +59,7 @@ public slots:
     void configChangedHandler(const QString &viewId, const QJsonObject &changes);
     void defineStyleHandler(const QJsonObject &params);
     void availableThemesHandler(const QVector<QString> &themes);
-    void themeChangedHandler(const QString &name, const Theme &theme);
+    void themeChangedHandler(const Theme &theme);
     void alertHandler(const QString &text);
 
     void rpcResponseFinishHandler(const QJsonObject &json);

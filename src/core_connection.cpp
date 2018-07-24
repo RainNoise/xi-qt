@@ -360,8 +360,8 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
     case Notification_ThemeChanged: {
         auto name = params["name"].toString();
         auto themeObj = params["theme"].toObject();
-        auto theme = Theme(themeObj);
-        emit themeChangedReceived(name, theme);
+        auto theme = Theme(name, themeObj);
+        emit themeChangedReceived(theme);
     } break;
     case Notification_AvailablePlugins: {
         QVector<QJsonObject> plugins;

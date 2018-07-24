@@ -1,6 +1,7 @@
 #ifndef THEME_H
 #define THEME_H
 
+#include <QBrush>
 #include <QColor>
 #include <QHash>
 #include <QJsonObject>
@@ -11,7 +12,7 @@ namespace xi {
 struct ThemeElement {
     enum Type {
         Color,
-		Option,
+        Option,
         Null,
     };
 
@@ -39,18 +40,33 @@ struct ThemeElement {
         if (type == Color) {
             color = ele.color;
         } else if (type == Option) {
-			option = ele.option;
+            option = ele.option;
         }
         return *this;
     }
+    operator QColor() {
+        return color;
+    }
+    operator QString() {
+        return option;
+    }
+    //operator QBrush() {
+    //    return color;
+    //}
 };
 
 #define THEME_ELEMENT_METHOD(TypeName)                                              \
     void TypeName(const ThemeElement &element) { m_elements[#TypeName] = element; } \
     ThemeElement TypeName() { return m_elements[#TypeName]; }
 
-class ThemeInfo {
-    friend class Theme;
+class Theme {
+public:
+    static Theme defaultTheme();
+
+    Theme();
+    Theme(const Theme &info);
+    explicit Theme(const QString &name, const QJsonObject &json);
+    Theme &operator=(const Theme &theme);
 
 public:
     THEME_ELEMENT_METHOD(accent);
@@ -86,30 +102,10 @@ public:
     THEME_ELEMENT_METHOD(tags_foreground);
     THEME_ELEMENT_METHOD(tags_options);
 
-    ThemeInfo &operator=(const ThemeInfo &info);
-
-protected:
-    void merge(const ThemeInfo &info);
-	QString m_name;
-    QHash<QString, ThemeElement> m_elements;
-};
-
-class Theme {
-public:
-    static Theme defaultTheme();
-
-    Theme();
-    explicit Theme(const ThemeInfo &info);
-    explicit Theme(const QJsonObject &json);
-
-    ThemeInfo info() const {
-        return m_info;
-    }
-
-    Theme &operator=(const Theme &theme);
-
 private:
-    ThemeInfo m_info;
+    void merge(const Theme &info);
+    QString m_name;
+    QHash<QString, ThemeElement> m_elements;
 };
 
 } // namespace xi

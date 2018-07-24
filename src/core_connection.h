@@ -127,7 +127,7 @@ signals:
     void pluginStartedReceived(const QString &viewId, const QString &pluginName);
     void pluginStoppedReceived(const QString &viewId, const QString &pluginName);
     void availableThemesReceived(const QVector<QString> &themes);
-    void themeChangedReceived(const QString &name, const Theme &theme);
+    void themeChangedReceived(const Theme &theme);
     void availablePluginsReceived(const QString &viewId, const QVector<QJsonObject> &plugins);
     void updateCommandsReceived(const QString &viewId, const QVector<QString> &commands);
     void configChangedReceived(const QString &viewId, const QJsonObject &changes);

@@ -41,16 +41,12 @@ const char *names[] = {
     "tags_options",
 };
 
-ThemeInfo defaultThemeInfo() {
-    ThemeInfo info;
-    info.foreground(QColor::fromRgb(255, 215, 0));
-    info.background(Qt::black);
-    info.caret(QColor::fromRgb(220, 220, 220));
-    return info;
-}
-
 Theme Theme::defaultTheme() {
-    return Theme(defaultThemeInfo());
+    Theme theme;
+    theme.foreground(QColor::fromRgb(255, 215, 0));
+    theme.background(Qt::black);
+    theme.caret(QColor::fromRgb(220, 220, 220));
+    return theme;
 }
 
 QColor to_color(const QJsonObject &json) {
@@ -61,49 +57,46 @@ QColor to_color(const QJsonObject &json) {
     return QColor(r, g, b, a);
 }
 
-Theme::Theme(const QJsonObject &json) {
-    ThemeInfo info;
+Theme::Theme(const QString &name, const QJsonObject &json) {
+    m_name = name;
     for (auto i = 0; i < std::size(names); ++i) {
         QString name = names[i];
-        auto &element = info.m_elements[name];
+        auto &element = m_elements[name];
         if (!json.contains(name)) {
             element.type = ThemeElement::Null;
             continue;
         }
         auto value = json[name];
+        auto type = value.type();
         if (value.isNull()) {
             element.type = ThemeElement::Null;
-        } else if (value.isArray()) {
-            element.type = ThemeElement::Color;
-            element.color = to_color(json[names[i]].toObject());
-        } else if (value.isString()) {
+        }else if (value.isString()) {
             element.type = ThemeElement::Option;
             element.option = value.toString();
-        }
+        } else {
+            element.type = ThemeElement::Color;
+            element.color = to_color(json[names[i]].toObject());
+        } 
     }
-    m_info = info;
-    //m_info.merge(defaultThemeInfo());
+    //merge(defaultTheme());
 }
 
-Theme::Theme(const ThemeInfo &info) {
-    m_info = info;
+Theme::Theme(const Theme &info) {
+    *this = info;
 }
 
 Theme::Theme() {
-    m_info = defaultTheme().m_info;
 }
 
 Theme &Theme::operator=(const Theme &theme) {
-    m_info = theme.m_info;
+    if (this != &theme) {
+        m_name = theme.m_name;
+        m_elements = theme.m_elements;
+    }
     return *this;
 }
 
-ThemeInfo &ThemeInfo::operator=(const ThemeInfo &info) {
-    m_elements = info.m_elements;
-    return *this;
-}
-
-void ThemeInfo::merge(const ThemeInfo &info) {
+void Theme::merge(const Theme &info) {
     for (auto i = 0; i < std::size(names); ++i) {
         auto &element = m_elements[names[i]];
         if (element.type == ThemeElement::Null) {

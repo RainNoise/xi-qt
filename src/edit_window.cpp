@@ -243,14 +243,13 @@ void EditWindow::defineStyleHandler(const QJsonObject &params) {
 void EditWindow::availableThemesHandler(const QVector<QString> &themes) {
 }
 
-void EditWindow::themeChangedHandler(const QString &name, const Theme &theme) {
+void EditWindow::themeChangedHandler(const Theme &theme) {
 	Perference::shared()->theme(theme);
-
     auto i = m_router.constBegin();
     while (i != m_router.constEnd()) {
         auto viewId = i.key();
         auto view = dynamic_cast<EditView *>(i.value());
-        if (view) view->themeChangedHandler(name, theme);
+        if (view) view->themeChangedHandler();
         ++i;
     }
 }

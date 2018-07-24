@@ -29,7 +29,7 @@ public:
 public:
     void updateHandler(const QJsonObject &json);
     void scrollHandler(int line, int column);
-    void themeChangedHandler(const QString &name, const Theme &theme);
+    void themeChangedHandler();
 
 protected:
     virtual void resizeEvent(QResizeEvent *event) override;

@@ -17,6 +17,7 @@ std::shared_ptr<xi::Theme> Perference::theme()
 }
 
 void Perference::theme(const Theme &theme) {
+    *m_theme = theme;
 }
 
 } // namespace xi

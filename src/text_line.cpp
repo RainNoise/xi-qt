@@ -1,4 +1,5 @@
 #include "text_line.h"
+#include "perference.h"
 
 namespace xi {
 
@@ -54,16 +55,18 @@ qreal TextLine::indexTox(int ix) {
 }
 
 std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
+    auto theme = Perference::shared()->theme();
     auto textline = std::make_shared<TextLine>(m_text, m_font);
     int leading = textline->metrics()->leading();
     auto lineWidth = textline->metrics()->width(m_text); // slow
+
     //auto lineWidth = 10000;
     qreal height = 0;
     QVector<QTextLayout::FormatRange> overrides;
     QTextLayout::FormatRange fmt;
     QTextCharFormat cfmt;
     cfmt.setFont(m_font->getFont());
-    cfmt.setForeground(QColor::fromRgb(248, 248, 186)); // 255, 215, 0 // 255, 128, 0 // 189, 183, 107 // 248, 248, 186
+    cfmt.setForeground(QBrush(theme->foreground())); // 255, 215, 0 // 255, 128, 0 // 189, 183, 107 // 248, 248, 186 // Qt::black
     fmt.start = 0;
     fmt.length = m_text.length();
     fmt.format = cfmt;

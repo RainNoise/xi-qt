@@ -4,6 +4,8 @@
 #include <QClipboard>
 #include <QMimeData>
 
+#include "perference.h"
+
 namespace xi {
 
 ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent) : QWidget(parent) {
@@ -101,10 +103,12 @@ QPair<int, int> ContentView::getFirstLastVisibleLines(const QRect &bound) {
 }
 
 void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
+    
+    auto theme = Perference::shared()->theme();
 
 	// for debug
 	renderer.drawRect(rect());
-	renderer.fillRect(rect(), Qt::black);
+    renderer.fillRect(rect(), theme->background());
 
 	//m_scrollOrigin.setY(-40);	// down
 	//m_scrollOrigin.setY(285);	// up
@@ -142,7 +146,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
 	QColor highlightArgb;
 	QColor foregroundArgb;
 	QColor gutterArgb;
-	QColor cursorColor = QColor::fromRgb(220, 220, 220);
+    QColor cursorColor = theme->caret();
 
 	// first pass: create TextLine objects and also draw background rects
 	for (auto lineIx = first; lineIx <= last; ++lineIx) {
