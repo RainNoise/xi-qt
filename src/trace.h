@@ -1,69 +1,68 @@
 #ifndef TRACE_H
 #define TRACE_H
 
-#include <QString>
-#include <QHash>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QJsonValue>
-#include <QThread>
 #include <QCoreApplication>
+#include <QHash>
+#include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QString>
+#include <QThread>
 
 #include <chrono>
-#include <memory>
-#include <vector>
 #include <list>
+#include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "unfair_lock.h"
-
 
 namespace xi {
 
 enum class TraceCategory {
-	Main,
-	Rpc,
+    Main,
+    Rpc,
 };
 enum class TracePhase {
-	Begin,
-	End,
-	Instant,
+    Begin,
+    End,
+    Instant,
 };
 
 QString to_string(TraceCategory tc);
 QString to_string(TracePhase tp);
 
 struct TraceEntry {
-	QString name;
-	TraceCategory cat;
-	TracePhase ph;
-	qint64 abstime;
-	qint64 tid;
-	QString thread_name;
+    QString name;
+    TraceCategory cat;
+    TracePhase ph;
+    qint64 abstime;
+    qint64 tid;
+    QString thread_name;
 };
 
 class Trace {
 public:
-	static Trace* shared();
+    static Trace *shared();
 
-	bool isEnabled();
-	void setEnabled(bool enabled);	
-	void trace(const QString& name, TraceCategory cat, TracePhase ph);
-	QJsonDocument json();
-	QJsonDocument snapshot();
+    bool isEnabled();
+    void setEnabled(bool enabled);
+    void trace(const QString &name, TraceCategory cat, TracePhase ph);
+    QJsonDocument json();
+    QJsonDocument snapshot();
 
 private:
-	UnfairLock m_mutex;
-	const int BUF_SIZE = 100'000;
-	std::unique_ptr<std::vector<TraceEntry>> m_buf;
-	int m_n_entries = 0;
-	bool m_enabled = false;
+    UnfairLock m_mutex;
+    const int BUF_SIZE = 100'000;
+    std::unique_ptr<std::vector<TraceEntry>> m_buf;
+    int m_n_entries = 0;
+    bool m_enabled = false;
 
-	Trace();
+    Trace();
 };
 
-} // xi
+} // namespace xi
 
 #endif // TRACE_H

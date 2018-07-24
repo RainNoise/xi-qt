@@ -7,33 +7,33 @@
 
 #include <functional>
 
-
 namespace xi {
 
 class Shortcuts {
-	using CallbackType = std::function<void(QShortcut *)>;
+    using CallbackType = std::function<void(QShortcut *)>;
+
 public:
-	Shortcuts(const Shortcuts &other) = delete;
-	Shortcuts &operator=(const Shortcuts &other) = delete;
-	~Shortcuts();
+    Shortcuts(const Shortcuts &other) = delete;
+    Shortcuts &operator=(const Shortcuts &other) = delete;
+    ~Shortcuts();
 
-	static Shortcuts* instance();
-	void append(QWidget *parent, const QKeySequence &seq, CallbackType callback);
-	void erase(QWidget *widget);
+    static Shortcuts *instance();
+    void append(QWidget *parent, const QKeySequence &seq, CallbackType callback);
+    void erase(QWidget *widget);
+
 private:
-	Shortcuts() { }
+    Shortcuts() {}
 };
-
 
 class HasShortcuts {
 public:
-	explicit HasShortcuts(QWidget *toErase) : m_toErase(toErase) { }
-	~HasShortcuts();
+    explicit HasShortcuts(QWidget *toErase) : m_toErase(toErase) {}
+    ~HasShortcuts();
 
 protected:
-	QWidget* m_toErase;
+    QWidget *m_toErase;
 };
 
-} // xi
+} // namespace xi
 
 #endif // SHORTCUTS_H

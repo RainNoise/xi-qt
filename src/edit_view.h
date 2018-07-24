@@ -9,7 +9,6 @@
 #include "file.h"
 #include "font.h"
 
-
 class QScrollBar;
 
 namespace xi {
@@ -21,40 +20,38 @@ class ContentView;
 class EditView : public QWidget {
     Q_OBJECT
 public:
-    explicit EditView(const std::shared_ptr<File>& file,
-		const std::shared_ptr<CoreConnection>& connection, 
-		QWidget *parent = nullptr);
+    explicit EditView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent = nullptr);
 
-	void updateHandler(const QJsonObject &json);
-	void scrollHandler(int line, int column);
-	void themeChangedHandler(const QString &name, const Theme &theme);
+    std::shared_ptr<File> getFile() const;
+    void relayoutScrollBar();
+    void focusOnEdit();
 
-	virtual void resizeEvent(QResizeEvent *event) override;
-	virtual void keyPressEvent(QKeyEvent *e) override;
-	virtual void wheelEvent(QWheelEvent *event) override;
+public:
+    void updateHandler(const QJsonObject &json);
+    void scrollHandler(int line, int column);
+    void themeChangedHandler(const QString &name, const Theme &theme);
 
-	void relayoutScrollBar();
-	std::shared_ptr<File> getFile() const;
-
-	void focusOnEdit();
+protected:
+    virtual void resizeEvent(QResizeEvent *event) override;
+    virtual void keyPressEvent(QKeyEvent *e) override;
+    virtual void wheelEvent(QWheelEvent *event) override;
 
 public slots:
-	void scrollBarVChanged(int y);
-	void scrollBarHChanged(int x);
+    void scrollBarVChanged(int y);
+    void scrollBarHChanged(int x);
 
 private:
-	EditWindow* m_editWindow;
-	ContentView *m_content;
-	QScrollBar *m_scrollBarV;
-	QScrollBar *m_scrollBarH;
+    EditWindow *m_editWindow;
+    ContentView *m_content;
+    QScrollBar *m_scrollBarV;
+    QScrollBar *m_scrollBarH;
 };
 
 class GutterWidget : public QWidget {
 public:
-
 private:
 };
 
-} // xi
+} // namespace xi
 
 #endif // EDITTEXTAREA_H

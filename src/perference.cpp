@@ -1,16 +1,14 @@
 #include "perference.h"
 
-
 namespace xi {
 
 Perference::Perference() {
-	m_theme = std::make_shared<Theme>();
+    m_theme = std::make_shared<Theme>();
 }
 
-Perference* Perference::shared() {
-	static Perference perference;
-	return &perference;
+Perference *Perference::shared() {
+    static Perference perference;
+    return &perference;
 }
 
-
-} // xi
+} // namespace xi

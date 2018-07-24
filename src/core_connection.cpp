@@ -2,7 +2,6 @@
 
 #include <QFuture>
 
-
 //! Startup and communication with the xi core thread.
 //! TODO
 //! 1. multi thread, queue, async
@@ -17,31 +16,31 @@ CoreConnection::~CoreConnection() {
 }
 
 void CoreConnection::init() {
-	m_recvBuf = std::make_unique<QBuffer>();
-	m_recvBuf->open(QBuffer::ReadWrite);
+    m_recvBuf = std::make_unique<QBuffer>();
+    m_recvBuf->open(QBuffer::ReadWrite);
 
-	//m_queue = std::make_shared<boost::lockfree::queue<QJsonObject>>();
+    //m_queue = std::make_shared<boost::lockfree::queue<QJsonObject>>();
 
-    m_process.reset(new QProcess, [](QProcess *p){ p->close(); delete p;});
-	m_process->setProcessChannelMode(QProcess::MergedChannels);
+    m_process.reset(new QProcess, [](QProcess *p) { p->close(); delete p; });
+    m_process->setProcessChannelMode(QProcess::MergedChannels);
 
-	// QObject::connect: Parentheses expected, signal xi::ReadXiCoreThread::finished in e:\sw5cc\newxi\xi-qt\src\coreconnection.cpp:59
-	//startCorePipeThread();
-	connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &CoreConnection::stdoutReceivedHandler);
+    // QObject::connect: Parentheses expected, signal xi::ReadXiCoreThread::finished in e:\sw5cc\newxi\xi-qt\src\coreconnection.cpp:59
+    //startCorePipeThread();
+    connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &CoreConnection::stdoutReceivedHandler);
 
-	m_process->start("xi-core");
-	m_process->waitForStarted();
+    m_process->start("xi-core");
+    m_process->waitForStarted();
 }
 
 void CoreConnection::startCorePipeThread() {
-	ReadCoreStdoutThread *readThread = new ReadCoreStdoutThread(m_process);
-	connect(readThread, &ReadCoreStdoutThread::resultReady, this, &CoreConnection::stdoutReceivedHandler);
-	connect(readThread, &ReadCoreStdoutThread::finished, readThread, &ReadCoreStdoutThread::deleteLater);
-	readThread->start();
+    ReadCoreStdoutThread *readThread = new ReadCoreStdoutThread(m_process);
+    connect(readThread, &ReadCoreStdoutThread::resultReady, this, &CoreConnection::stdoutReceivedHandler);
+    connect(readThread, &ReadCoreStdoutThread::finished, readThread, &ReadCoreStdoutThread::deleteLater);
+    readThread->start();
 
-	//WriteCoreStdinThread *writeThread = new WriteCoreStdinThread(m_process, m_queue);
-	//writeThread->start();
-	//connect(writeThread, &WriteCoreStdinThread::finished, writeThread, &WriteCoreStdinThread::deleteLater);
+    //WriteCoreStdinThread *writeThread = new WriteCoreStdinThread(m_process, m_queue);
+    //writeThread->start();
+    //connect(writeThread, &WriteCoreStdinThread::finished, writeThread, &WriteCoreStdinThread::deleteLater);
 }
 
 static QHash<QString, CoreConnection::NotificationType> notificationMap;
@@ -109,7 +108,7 @@ void CoreConnection::sendEditArray(const QString &viewId, const QString &method,
 }
 
 void CoreConnection::sendEditRequest(
-	const QString &viewId, const QString &method, const QJsonObject &params, const ResponseHandler &handler) {
+    const QString &viewId, const QString &method, const QJsonObject &params, const ResponseHandler &handler) {
     QJsonObject object;
     object["method"] = method;
     object["view_id"] = viewId;
@@ -235,45 +234,45 @@ void CoreConnection::sendFindPrevious(const QString &viewId, bool wrapAround) {
 void CoreConnection::stdoutReceivedHandler() {
     qDebug() << "stdoutReceivedHandler";
 
-	if (m_process->canReadLine()) {
-		auto& buf = m_recvBuf->buffer();
-		do {
-			auto line = m_process->readLine();
-			if (!line.endsWith('\n')) {
-				buf.append(line);
-			} else {
-				if (buf.size() != 0) {
-					auto newLine = buf + line;
-					handleRaw(newLine);
-					buf.clear();
-				} else {
-					handleRaw(line);
-				}
-			}
-		} while (m_process->bytesAvailable());
-	} else {
-		auto& buf = m_recvBuf->buffer();
+    if (m_process->canReadLine()) {
+        auto &buf = m_recvBuf->buffer();
+        do {
+            auto line = m_process->readLine();
+            if (!line.endsWith('\n')) {
+                buf.append(line);
+            } else {
+                if (buf.size() != 0) {
+                    auto newLine = buf + line;
+                    handleRaw(newLine);
+                    buf.clear();
+                } else {
+                    handleRaw(line);
+                }
+            }
+        } while (m_process->bytesAvailable());
+    } else {
+        auto &buf = m_recvBuf->buffer();
 
-		buf.append(m_process->readAll());
-		if (buf.size() == 0) {
-			return;
-		}
+        buf.append(m_process->readAll());
+        if (buf.size() == 0) {
+            return;
+        }
 
-		auto list = buf.split('\n');
-		list.removeLast(); //empty
+        auto list = buf.split('\n');
+        list.removeLast(); //empty
 
-		if (buf.at(buf.size() - 1) != '\n') {
-			buf = list.last();
-			list.removeLast(); //?
-		} else {
-			buf.clear();
-		}
+        if (buf.at(buf.size() - 1) != '\n') {
+            buf = list.last();
+            list.removeLast(); //?
+        } else {
+            buf.clear();
+        }
 
-		foreach(auto &bytesline, list) {
-			qDebug() << bytesline;
-			handleRaw(bytesline);
-		}
-	}
+        foreach (auto &bytesline, list) {
+            qDebug() << bytesline;
+            handleRaw(bytesline);
+        }
+    }
 }
 
 // Bytes to json
@@ -283,7 +282,7 @@ void CoreConnection::handleRaw(const QByteArray &bytes) {
         qFatal("malformed json %s", bytes);
     }
     auto json = doc.object();
-     handleRpc(json);
+    handleRpc(json);
 }
 
 void CoreConnection::handleRpc(const QJsonObject &json) {
@@ -296,17 +295,17 @@ void CoreConnection::handleRpc(const QJsonObject &json) {
             if (it != m_pending.end()) {
                 auto handler = it.value();
                 m_pending.erase(it);
-				if (handler.type() == ResponseHandler::Emit) {
-					result["user"] = handler.getUserData();
-					emit RpcResponseReady(result);
-				} else {
-					handler.invoke(result);
-				}
+                if (handler.type() == ResponseHandler::Emit) {
+                    result["user"] = handler.getEmitData();
+                    emit RpcResponseReady(result);
+                } else {
+                    handler.invoke(result);
+                }
             }
-        }else {
+        } else {
             handleRequest(json);
         }
-    }else {
+    } else {
         handleNotification(json);
     }
 }
@@ -327,129 +326,126 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
     auto viewIdentifier = params["view_id"].toString();
 
     switch (notification(method)) {
-    case Notification_Update:
-        {
-            auto update = params["update"].toObject();
-            emit updateReceived(viewIdentifier, update);
+    case Notification_Update: {
+        auto update = params["update"].toObject();
+        emit updateReceived(viewIdentifier, update);
+    } break;
+    case Notification_ScrollTo: {
+        auto line = params["line"].toInt();
+        auto column = params["col"].toInt();
+        emit scrollReceived(viewIdentifier, line, column);
+    } break;
+    case Notification_DefStyle: {
+        emit defineStyleReceived(params);
+    } break;
+    case Notification_PluginStarted: {
+        auto name = params["plugin"].toString();
+        emit pluginStartedReceived(viewIdentifier, name);
+    } break;
+    case Notification_PluginStopped: {
+        auto name = params["plugin"].toString();
+        emit pluginStoppedReceived(viewIdentifier, name);
+    } break;
+    case Notification_AvailableThemes: {
+        QVector<QString> themes;
+        QJsonArray array = params["themes"].toArray();
+        foreach (const QJsonValue &v, array) {
+            themes.push_front(v.toString());
         }
-        break;
-    case Notification_ScrollTo:
-        {
-            auto line = params["line"].toInt();
-            auto column = params["col"].toInt();
-            emit scrollReceived(viewIdentifier, line, column);
+        emit availableThemesReceived(themes);
+    } break;
+    case Notification_ThemeChanged: {
+        auto name = params["name"].toString();
+        auto themeObj = params["theme"].toObject();
+        auto theme = Theme(themeObj);
+        emit themeChangedReceived(name, theme);
+    } break;
+    case Notification_AvailablePlugins: {
+        QVector<QJsonObject> plugins;
+        QJsonArray array = params["plugins"].toArray();
+        foreach (const QJsonValue &v, array) {
+            plugins.push_front(v.toObject());
         }
-        break;
-    case Notification_DefStyle:
-        {
-            emit defineStyleReceived(params);
-        }
-        break;
-    case Notification_PluginStarted:
-        {
-            auto name = params["plugin"].toString();
-            emit pluginStartedReceived(viewIdentifier, name);
-        }
-        break;
-    case Notification_PluginStopped:
-        {
-            auto name = params["plugin"].toString();
-            emit pluginStoppedReceived(viewIdentifier, name);
-        }
-        break;
-    case Notification_AvailableThemes:
-        {
-            QVector<QString> themes;
-            QJsonArray array = params["themes"].toArray();
-            foreach (const QJsonValue &v, array) {
-                themes.push_front(v.toString());
-            }
-            emit availableThemesReceived(themes);
-        }
-        break;
-    case Notification_ThemeChanged:
-        {
-		auto name = params["name"].toString();
-		auto themeObj = params["theme"].toObject();
-		auto theme = Theme(themeObj);
-		emit themeChangedReceived(name, theme);
-        }
-        break;
-    case Notification_AvailablePlugins:
-        {
-            QVector<QJsonObject> plugins;
-            QJsonArray array = params["plugins"].toArray();
-            foreach (const QJsonValue &v, array) {
-                plugins.push_front(v.toObject());
-            }
-            emit availablePluginsReceived(viewIdentifier, plugins);
-        }
-        break;
-    case Notification_UpdateCmds:
-        {
-//            auto plugin = params["plugin"].toString();
-//            QVector<QJsonObject> cmds;
-//            QJsonArray array = params["cmds"].toArray();
-//            foreach (const QJsonValue &v, array) {
-//                cmds.push_front(v.toObject());
-//            }
-//            emit updateCommandsReceived(viewIdentifier, line, column);
-        }
-        break;
-    case Notification_ConfigChanged:
-        {
-//            auto line = params["line"].toInt();
-//            auto column = params["col"].toInt();
-//            emit configChangedReceived(viewIdentifier, line, column);
-        }
-        break;
-    case Notification_Alert:
-        {
-            auto message = params["msg"].toString();
-            emit alertReceived(message);
-        }
-        break;
+        emit availablePluginsReceived(viewIdentifier, plugins);
+    } break;
+    case Notification_UpdateCmds: {
+        //            auto plugin = params["plugin"].toString();
+        //            QVector<QJsonObject> cmds;
+        //            QJsonArray array = params["cmds"].toArray();
+        //            foreach (const QJsonValue &v, array) {
+        //                cmds.push_front(v.toObject());
+        //            }
+        //            emit updateCommandsReceived(viewIdentifier, line, column);
+    } break;
+    case Notification_ConfigChanged: {
+        //            auto line = params["line"].toInt();
+        //            auto column = params["col"].toInt();
+        //            emit configChangedReceived(viewIdentifier, line, column);
+    } break;
+    case Notification_Alert: {
+        auto message = params["msg"].toString();
+        emit alertReceived(message);
+    } break;
     case Notification_Unknown:
-    default:
-        {
-            qDebug() << "unknown notification: " << method;
-        }
-        break;
+    default: {
+        qDebug() << "unknown notification: " << method;
+    } break;
     }
 }
 
 void CoreConnection::sendJson(const QJsonObject &json) {
     qDebug() << "sendJson";
     qDebug() << json;
-	
-	//m_queue->bounded_push(json);
+
+    //m_queue->bounded_push(json);
 
     QJsonDocument doc(json);
-    QString stream(doc.toJson(QJsonDocument::Compact) +'\n');
+    QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
     m_process->write(stream.toUtf8());
     m_process->waitForBytesWritten(); // async
 }
 
 ResponseHandler::ResponseHandler(CallbackType callback /*= nullptr*/) {
-	m_type = Callback;
-	m_callback = std::move(callback);
+    m_type = Callback;
+    m_callback = std::move(callback);
 }
 
 ResponseHandler::ResponseHandler(const ResponseHandler &handler) {
-	m_callback = std::move(handler.m_callback);
-	m_type = handler.m_type;
-	m_userData = handler.m_userData;
+    m_callback = std::move(handler.m_callback);
+    m_type = handler.m_type;
+    m_userData = handler.m_userData;
+}
+
+ResponseHandler::ResponseHandler(const QJsonObject &data) {
+    setEmitData(data);
 }
 
 void ResponseHandler::invoke(const QJsonObject &json) {
     if (m_callback) m_callback(json);
 }
 
-ResponseHandler& ResponseHandler::operator=(const ResponseHandler &handler) {
+ResponseHandler &ResponseHandler::operator=(const ResponseHandler &handler) {
     m_callback = std::move(handler.m_callback);
-	m_type = handler.m_type;
-	m_userData = handler.m_userData;
+    m_type = handler.m_type;
+    m_userData = handler.m_userData;
     return *this;
+}
+
+xi::ResponseHandler::Type ResponseHandler::type() const {
+    return m_type;
+}
+
+void ResponseHandler::type(Type type) {
+    m_type = type;
+}
+
+void ResponseHandler::setEmitData(const QJsonObject &data) {
+    m_type = Emit;
+    m_userData = data;
+}
+
+QJsonObject ResponseHandler::getEmitData() const {
+    return m_userData;
 }
 
 //void WriteCoreStdinThread::run() {
@@ -467,26 +463,26 @@ ResponseHandler& ResponseHandler::operator=(const ResponseHandler &handler) {
 //}
 
 void ReadCoreStdoutThread::run() {
-	while (1) {
-		if (!m_core) break;
-		if (m_core->canReadLine()) {
-			auto line = m_core->readLine();
-			emit resultReady(line);
-		}
-		//if (m_core->bytesAvailable() > 0) {
-		//	auto buf = m_readBuffer.buffer();
-		//	auto bytes = m_core->readAll();
-		//	for (auto b : bytes) {
-		//		buf.append(b);
-		//		if (b == '\n') {
-		//			QByteArray line(buf);
-		//			buf.clear();
-		//			emit resultReady(line);
-		//		}
-		//	}
-		//}
-		msleep(1);
-	}
+    while (1) {
+        if (!m_core) break;
+        if (m_core->canReadLine()) {
+            auto line = m_core->readLine();
+            emit resultReady(line);
+        }
+        //if (m_core->bytesAvailable() > 0) {
+        //	auto buf = m_readBuffer.buffer();
+        //	auto bytes = m_core->readAll();
+        //	for (auto b : bytes) {
+        //		buf.append(b);
+        //		if (b == '\n') {
+        //			QByteArray line(buf);
+        //			buf.clear();
+        //			emit resultReady(line);
+        //		}
+        //	}
+        //}
+        msleep(1);
+    }
 }
 
-} // xi
+} // namespace xi

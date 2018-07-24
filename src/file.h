@@ -4,7 +4,6 @@
 #include <QString>
 #include <QVector>
 
-
 namespace xi {
 
 //struct FileInfo {
@@ -43,34 +42,27 @@ namespace xi {
 //
 //};
 
-class File
-{
+class File {
 public:
     File();
-	File(const File& file);
+    File(const File &file);
 
-	void setPath(const QString& path);
-	void setViewId(const QString& viewId);
-	void setTempName(const QString& name) {
-		m_tempName = name;
-	}
+    void setPath(const QString &path);
+    void setViewId(const QString &viewId);
+    void setTempName(const QString &name);
 
-	QString viewId() const;
-	QString path() const;
-	QString name() const;
-	QString tempName() const {
-		return m_tempName;
-	}
-	QString displayName() {
-		return m_path.isEmpty() ? tempName() : name();
-	}
+    QString viewId() const;
+    QString path() const;
+    QString name() const;
+    QString tempName() const;
+    QString displayName() const;
 
 private:
-	QString m_path;
-	QString m_viewId;
-	QString m_tempName; //new file save dialog
+    QString m_path;
+    QString m_viewId;
+    QString m_tempName; //new file save dialog
 };
 
-} // xi
+} // namespace xi
 
 #endif // FILE_H

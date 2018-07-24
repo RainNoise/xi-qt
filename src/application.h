@@ -3,18 +3,16 @@
 
 #include <QApplication>
 
-
 namespace xi {
 
-class Application : public QApplication
-{
-	Q_OBJECT
+class Application : public QApplication {
+    Q_OBJECT
 
 public:
-	Application(int &argc, char **argv);
-	~Application();
+    Application(int &argc, char **argv);
+    ~Application();
 };
 
-}
+} // namespace xi
 
 #endif // APPLICATION_H

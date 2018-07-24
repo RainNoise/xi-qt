@@ -3,15 +3,12 @@
 
 namespace xi {
 
-class Xi
-{
+class Xi {
 public:
-	
-
 private:
-	Xi();
+    Xi();
 };
 
-}
+} // namespace xi
 
 #endif // XI_H

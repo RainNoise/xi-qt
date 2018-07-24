@@ -1,51 +1,46 @@
 #ifndef STYLEMAP_H
 #define STYLEMAP_H
 
-#include <QVector>
+#include <QColor>
 #include <QJsonObject>
 #include <QString>
-#include <QColor>
+#include <QVector>
 
 #include <memory>
 
 #include "range.h"
 #include "text_line.h"
 
-
 namespace xi {
 
-class StyleSpan
-{
+class StyleSpan {
 public:
     friend class TextLine;
 
-	using StyleIdentifier = int;
+    using StyleIdentifier = int;
 
-	StyleSpan();
-	StyleSpan(StyleIdentifier style, RangeI range);
+    StyleSpan();
+    StyleSpan(StyleIdentifier style, RangeI range);
 
-	static std::shared_ptr<QVector<StyleSpan>> styles(const QJsonArray& object, const QString& text);
+    static std::shared_ptr<QVector<StyleSpan>> styles(const QJsonArray &object, const QString &text);
 
 private:
-	StyleIdentifier m_style;
-	RangeI m_range;
+    StyleIdentifier m_style;
+    RangeI m_range;
 };
 
-class StyleMap
-{
+class StyleMap {
 public:
-	StyleMap() {
+    StyleMap() {
+    }
 
-	}
-
-	// init builder var
-	void applyStyles(const std::shared_ptr<TextLineBuilder>& builder, 
-		std::shared_ptr<QVector<StyleSpan>> styles,
-		const QColor& selColor, const QColor& highlightColor) {
-
-	}
+    // init builder var
+    void applyStyles(const std::shared_ptr<TextLineBuilder> &builder,
+                     std::shared_ptr<QVector<StyleSpan>> styles,
+                     const QColor &selColor, const QColor &highlightColor) {
+    }
 };
 
-} // xi
+} // namespace xi
 
 #endif // STYLEMAP_H

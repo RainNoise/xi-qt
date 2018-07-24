@@ -5,37 +5,36 @@
 
 #include <memory>
 
-
 namespace xi {
 
 class UnfairLock {
-	friend class UnfairLocker;
+    friend class UnfairLocker;
 
 public:
-	UnfairLock();
+    UnfairLock();
 
-	void lock();
-	void unlock();
-	bool tryLock();
+    void lock();
+    void unlock();
+    bool tryLock();
 
 protected:
-	std::unique_ptr<QMutex> m_lock;
+    std::unique_ptr<QMutex> m_lock;
 };
-
 
 class UnfairLocker {
 public:
-	UnfairLocker(UnfairLock &mutex) {
-		m_mutex = &mutex;
-		m_mutex->lock();
-	}
-	~UnfairLocker() {
-		m_mutex->unlock();
-	}
+    UnfairLocker(UnfairLock &mutex) {
+        m_mutex = &mutex;
+        m_mutex->lock();
+    }
+    ~UnfairLocker() {
+        m_mutex->unlock();
+    }
+
 protected:
-	UnfairLock* m_mutex;
+    UnfairLock *m_mutex;
 };
 
-} // xi
+} // namespace xi
 
 #endif // UNFAIRLOCK_H

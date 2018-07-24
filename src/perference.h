@@ -5,25 +5,23 @@
 
 #include "theme.h"
 
-
 namespace xi {
 
 /// xi::Perference::shared()->theme();
 /// xi::Perference::shared()->keymap();
 /// xi::Perference::shared()->setting();
-class Perference
-{
+class Perference {
 public:
-	static Perference* shared();
+    static Perference *shared();
 
-	std::shared_ptr<Theme> theme();
-	void theme(const Theme& theme);
+    std::shared_ptr<Theme> theme();
+    void theme(const Theme &theme);
 
 private:
-	Perference();
-	std::shared_ptr<Theme> m_theme;
+    Perference();
+    std::shared_ptr<Theme> m_theme;
 };
 
-} // xi
+} // namespace xi
 
 #endif // PERFERENCE_H
