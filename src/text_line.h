@@ -5,8 +5,8 @@
 #include <QFontMetricsF>
 #include <QObject>
 #include <QPainter>
-#include <QTextLayout>
 #include <QTextCharFormat>
+#include <QTextLayout>
 
 #include <memory>
 

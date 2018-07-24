@@ -50,10 +50,10 @@ void XiMainWindow::setupCore() {
     if (configDir.isEmpty())
         configDir = defaultConfigDirectory();
     QDir dir = QCoreApplication::applicationDirPath();
-	if (!dir.cd(XI_PLUGINS)) {
-		dir.mkdir(XI_PLUGINS);
-		dir.cd(XI_PLUGINS);
-	}
+    if (!dir.cd(XI_PLUGINS)) {
+        dir.mkdir(XI_PLUGINS);
+        dir.cd(XI_PLUGINS);
+    }
     QString clientExtrasDir = dir.absolutePath();
     m_coreConnection->sendClientStarted(configDir, clientExtrasDir);
 

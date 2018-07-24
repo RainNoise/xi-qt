@@ -58,24 +58,24 @@ protected:
 
 public:
     std::shared_ptr<File> getFile() const;
-	int getLines();
-	qreal getTopPad();
+    int getLines();
+    qreal getTopPad();
     qreal getMaxLineWidth();
-	int getLinesHeight();
-	int getContentHeight();
-	int getLineSpace();
-	int getMaxCharWidth();
+    int getLinesHeight();
+    int getContentHeight();
+    int getLineSpace();
+    int getMaxCharWidth();
     QPoint getScrollOrigin();
-	int getXOff();
+    int getXOff();
 
-	int getLine(int y);
-	int getColumn(int line, int x);
+    int getLine(int y);
+    int getColumn(int line, int x);
 
     int checkLineVisible(int line);
     qreal getLineColumnWidth(int line, int column);
     int checkLineColumnPosition(int line, int column);
     QPair<int, int> posToLineColumn(const QPoint &pos);
-	QPair<int, int> getFirstLastVisibleLines(const QRect &bound);
+    QPair<int, int> getFirstLastVisibleLines(const QRect &bound);
 
     void scrollY(int y);
     void scrollX(int x);
@@ -150,11 +150,11 @@ private:
     std::shared_ptr<EditViewDataSource> m_dataSource;
     const static qreal m_x0;
     QPoint m_scrollOrigin;
-	int m_firstLine;
-	int m_visibleLines;
+    int m_firstLine;
+    int m_visibleLines;
     qreal m_maxLineWidth;
     QHash<QString, QString> m_selectorToCommand;
-	QPointF m_margin;
+    QPointF m_margin;
 };
 } // namespace xi
 

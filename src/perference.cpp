@@ -11,7 +11,7 @@ Perference *Perference::shared() {
 }
 
 Theme Perference::theme() const {
-	return m_theme;
+    return m_theme;
 }
 
 void Perference::theme(const Theme &theme) {

@@ -58,15 +58,15 @@ public:
     explicit LineCache();
     void applyUpdate(const QJsonObject &json);
     inline int height() { return m_height; }
-	std::shared_ptr<Line> getLine(int ix);
+    std::shared_ptr<Line> getLine(int ix);
     std::vector<std::shared_ptr<Line>> getLines(const RangeI &range);
 
 private:
     std::vector<std::shared_ptr<Line>> m_lines;
-	int m_height;
-	int m_invalidBefore;
-	int m_invalidAfter;
-	int m_revision;
+    int m_height;
+    int m_invalidBefore;
+    int m_invalidAfter;
+    int m_revision;
 };
 
 } // namespace xi

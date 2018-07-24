@@ -17,8 +17,8 @@
 
 #include "content_view.h"
 #include "edit_window.h"
-#include "text_line.h"
 #include "perference.h"
+#include "text_line.h"
 
 namespace xi {
 
@@ -40,8 +40,8 @@ EditView::EditView(const std::shared_ptr<File> &file, const std::shared_ptr<Core
     layout->addWidget(m_scrollBarV, 1, 2);
     layout->addWidget(m_scrollBarH, 2, 1);
     layout->setContentsMargins(0, 0, 0, 0);
-	layout->setMargin(0);
-	layout->setSpacing(0);
+    layout->setMargin(0);
+    layout->setSpacing(0);
     this->setLayout(layout);
 
     connect(m_scrollBarV, &QScrollBar::valueChanged, this, &EditView::scrollBarVChanged);

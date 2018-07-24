@@ -22,10 +22,10 @@ void LineCache::applyUpdate(const QJsonObject &json) {
     }
 
     auto oldHeight = m_height;
-	int newInvalidBefore = 0;
-	int newInvalidAfter = 0;
-	int oldIdx = 0;
-	std::vector<std::shared_ptr<Line>> newLines;
+    int newInvalidBefore = 0;
+    int newInvalidAfter = 0;
+    int oldIdx = 0;
+    std::vector<std::shared_ptr<Line>> newLines;
 
     auto ops = json["ops"].toArray();
     for (auto opref : ops) {
@@ -92,9 +92,9 @@ void LineCache::applyUpdate(const QJsonObject &json) {
                     QJsonArray jsonLines = op["lines"].toArray();
                     auto jsonIx = n - nRemaining;
                     for (auto ix = startIx; ix < startIx + nCopy; ++ix) {
-                         newLines.push_back(std::make_shared<Line>(m_lines[ix], jsonLines[ix].toObject()));
-						//m_lines[ix]->update(jsonLines[ix].toObject());
-						//newLines.push_back(std::move(m_lines[i]));
+                        newLines.push_back(std::make_shared<Line>(m_lines[ix], jsonLines[ix].toObject()));
+                        //m_lines[ix]->update(jsonLines[ix].toObject());
+                        //newLines.push_back(std::move(m_lines[i]));
                         jsonIx += 1;
                     }
                 }
@@ -125,7 +125,7 @@ void LineCache::applyUpdate(const QJsonObject &json) {
 }
 
 std::shared_ptr<xi::Line> LineCache::getLine(int ix) {
-	return m_lines[ix];
+    return m_lines[ix];
 }
 
 std::vector<std::shared_ptr<xi::Line>> LineCache::getLines(const RangeI &range) {
@@ -184,15 +184,14 @@ Line::Line(std::shared_ptr<Line> line, const QJsonObject &json) {
     }
 }
 
-Line & Line::operator=(const Line &line)
-{
-	if (this == &line) {
-		return *this;
-	}
-	m_text = line.m_text;
-	m_cursor = line.m_cursor;
-	m_styles = line.m_styles;
-	return *this;
+Line &Line::operator=(const Line &line) {
+    if (this == &line) {
+        return *this;
+    }
+    m_text = line.m_text;
+    m_cursor = line.m_cursor;
+    m_styles = line.m_styles;
+    return *this;
 }
 
 } // namespace xi

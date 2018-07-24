@@ -14,18 +14,18 @@ namespace xi {
 
 class StyleSpan {
 public:
-	friend class TextLine;
+    friend class TextLine;
 
-	using StyleIdentifier = int;
+    using StyleIdentifier = int;
 
-	StyleSpan();
-	StyleSpan(StyleIdentifier style, RangeI range);
+    StyleSpan();
+    StyleSpan(StyleIdentifier style, RangeI range);
 
-	static std::shared_ptr<QVector<StyleSpan>> styles(const QJsonArray &object, const QString &text);
+    static std::shared_ptr<QVector<StyleSpan>> styles(const QJsonArray &object, const QString &text);
 
 private:
-	StyleIdentifier m_style;
-	RangeI m_range;
+    StyleIdentifier m_style;
+    RangeI m_range;
 };
 
 } // namespace xi
