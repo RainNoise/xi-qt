@@ -8,6 +8,7 @@
 #include "edit_view.h"
 #include "edit_window.h"
 #include "shortcuts.h"
+#include "perference.h"
 
 namespace xi {
 
@@ -243,6 +244,8 @@ void EditWindow::availableThemesHandler(const QVector<QString> &themes) {
 }
 
 void EditWindow::themeChangedHandler(const QString &name, const Theme &theme) {
+	Perference::shared()->theme(theme);
+
     auto i = m_router.constBegin();
     while (i != m_router.constEnd()) {
         auto viewId = i.key();
@@ -260,7 +263,7 @@ void EditWindow::alertHandler(const QString &text) {
 
 void EditWindow::rpcResponseFinishHandler(const QJsonObject &json) {
     QString viewId = json["result"].toString();
-    auto i = json["user"].toObject();
+    auto i = json["emit"].toObject();
     if (i["method"].toString() == "NewViewId") {
         QString filePath = i["value"].toString();
         auto file = std::make_shared<File>();

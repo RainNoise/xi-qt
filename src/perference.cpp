@@ -11,4 +11,12 @@ Perference *Perference::shared() {
     return &perference;
 }
 
+std::shared_ptr<xi::Theme> Perference::theme()
+{
+	return m_theme;
+}
+
+void Perference::theme(const Theme &theme) {
+}
+
 } // namespace xi

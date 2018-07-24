@@ -9,25 +9,10 @@
 #include <memory>
 
 #include "range.h"
+#include "style_span.h"
 #include "text_line.h"
 
 namespace xi {
-
-class StyleSpan {
-public:
-    friend class TextLine;
-
-    using StyleIdentifier = int;
-
-    StyleSpan();
-    StyleSpan(StyleIdentifier style, RangeI range);
-
-    static std::shared_ptr<QVector<StyleSpan>> styles(const QJsonArray &object, const QString &text);
-
-private:
-    StyleIdentifier m_style;
-    RangeI m_range;
-};
 
 class StyleMap {
 public:

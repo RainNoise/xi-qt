@@ -47,7 +47,7 @@ public:
 private:
     CallbackType m_callback;
     Type m_type;
-    QJsonObject m_userData;
+    QJsonObject m_emitData;
 };
 
 class CoreConnection : public QObject {
@@ -101,10 +101,10 @@ public:
     void sendCut(const QString &viewId, const ResponseHandler &handler);
     void sendSave(const QString &viewId, const QString &filePath);
     void sendSetTheme(const QString &themeName);
-    void sendScroll(const QString &viewId, int64_t firstLine, int64_t lastLine);
-    void sendClick(const QString &viewId, int64_t line, int64_t column, int64_t modifiers, int64_t clickCount);
-    void sendDrag(const QString &viewId, int64_t line, int64_t column, int64_t modifiers);
-    void sendGesture(const QString &viewId, int64_t line, int64_t col, const QString &ty);
+    void sendScroll(const QString &viewId, qint64 firstLine, qint64 lastLine);
+    void sendClick(const QString &viewId, qint64 line, qint64 column, qint64 modifiers, qint64 clickCount);
+    void sendDrag(const QString &viewId, qint64 line, qint64 column, qint64 modifiers);
+    void sendGesture(const QString &viewId, qint64 line, qint64 col, const QString &ty);
     void sendFind(const QString &viewId, const QString &chars, bool caseSensitive, const ResponseHandler &handler);
     void sendFindNext(const QString &viewId, bool wrapAround, bool allowSame);
     void sendFindPrevious(const QString &viewId, bool wrapAround);
@@ -142,8 +142,8 @@ public slots:
 private:
     std::shared_ptr<QProcess> m_process;
     //std::shared_ptr<boost::lockfree::queue<QJsonObject>> m_queue;
-    QHash<int64_t, ResponseHandler> m_pending;
-    int64_t m_rpcIndex;
+    QHash<qint64, ResponseHandler> m_pending;
+    qint64 m_rpcIndex;
     std::shared_ptr<QBuffer> m_recvBuf;
 };
 

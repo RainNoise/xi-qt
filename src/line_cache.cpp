@@ -22,10 +22,10 @@ void LineCache::applyUpdate(const QJsonObject &json) {
     }
 
     auto oldHeight = m_height;
-    auto newInvalidBefore = 0;
-    std::vector<std::shared_ptr<Line>> newLines;
-    auto newInvalidAfter = 0;
-    auto oldIdx = 0;
+	int newInvalidBefore = 0;
+	int newInvalidAfter = 0;
+	int oldIdx = 0;
+	std::vector<std::shared_ptr<Line>> newLines;
 
     auto ops = json["ops"].toArray();
     for (auto opref : ops) {
@@ -33,7 +33,7 @@ void LineCache::applyUpdate(const QJsonObject &json) {
         auto opTypeStr = op["op"].toString();
         qDebug() << "update--> op type: " << opTypeStr;
         auto opType = CoreConnection::ops(opTypeStr);
-        qint32 n = op["n"].toInt();
+        auto n = op["n"].toInt();
         switch (opType) {
         case CoreConnection::Ops_Invalidate: {
             //auto curLine = newInvalidBefore + newLines.size() + newInvalidAfter;
@@ -65,7 +65,7 @@ void LineCache::applyUpdate(const QJsonObject &json) {
         case CoreConnection::Ops_Update: {
             auto nRemaining = n;
             if (oldIdx < m_invalidBefore) {
-                auto nInvalid = std::min(n, m_invalidBefore - oldIdx);
+                auto nInvalid = qMin(n, m_invalidBefore - oldIdx);
                 if (newLines.size() == 0) {
                     newInvalidBefore += nInvalid;
                 } else {
@@ -75,11 +75,11 @@ void LineCache::applyUpdate(const QJsonObject &json) {
                 nRemaining -= nInvalid;
             }
             if (nRemaining > 0 && oldIdx < m_invalidBefore + m_lines.size()) {
-                for (auto i = 0; i < newInvalidAfter; ++i) {
+                for (int i = 0; i < newInvalidAfter; ++i) {
                     newLines.push_back(nullptr);
                 }
                 newInvalidAfter = 0;
-                auto nCopy = std::min(nRemaining, m_invalidBefore + (qint32)m_lines.size() - oldIdx);
+                auto nCopy = qMin(nRemaining, m_invalidBefore + (int)m_lines.size() - oldIdx);
                 if (oldIdx != newInvalidBefore + newLines.size() || opType != CoreConnection::Ops_Copy) {
                     //...
                 }
@@ -92,7 +92,9 @@ void LineCache::applyUpdate(const QJsonObject &json) {
                     QJsonArray jsonLines = op["lines"].toArray();
                     auto jsonIx = n - nRemaining;
                     for (auto ix = startIx; ix < startIx + nCopy; ++ix) {
-                        newLines.push_back(std::make_shared<Line>(m_lines[ix], jsonLines[ix].toObject()));
+                         newLines.push_back(std::make_shared<Line>(m_lines[ix], jsonLines[ix].toObject()));
+						//m_lines[ix]->update(jsonLines[ix].toObject());
+						//newLines.push_back(std::move(m_lines[i]));
                         jsonIx += 1;
                     }
                 }
@@ -122,6 +124,10 @@ void LineCache::applyUpdate(const QJsonObject &json) {
     m_revision++;
 }
 
+std::shared_ptr<xi::Line> LineCache::getLine(int ix) {
+	return m_lines[ix];
+}
+
 std::vector<std::shared_ptr<xi::Line>> LineCache::getLines(const RangeI &range) {
     std::vector<std::shared_ptr<Line>> result;
     for (auto i = range.start() - m_invalidBefore; i < range.end(); ++i) {
@@ -136,7 +142,7 @@ std::vector<std::shared_ptr<xi::Line>> LineCache::getLines(const RangeI &range) 
 
 Line::Line(const QJsonObject &json) {
     m_styles = std::make_shared<QVector<StyleSpan>>();
-    m_cursor = std::make_shared<QVector<qint32>>();
+    m_cursor = std::make_shared<QVector<int>>();
 
     if (json["text"].isString()) {
         m_text = json["text"].toString();
@@ -158,12 +164,11 @@ Line::Line(const QJsonObject &json) {
 // std::shared_ptr<Line> line
 // const Line *line
 Line::Line(std::shared_ptr<Line> line, const QJsonObject &json) {
-    if (!line) {
-        return;
-    }
+    if (!line) { return; }
+
     m_text = line->m_text;
     if (json.contains("cursor")) {
-        m_cursor = std::make_shared<QVector<qint32>>();
+        m_cursor = std::make_shared<QVector<int>>();
         auto jsonCursors = json["cursor"].toArray();
         for (auto jsonCursor : jsonCursors) {
             m_cursor->append(jsonCursor.toInt());
@@ -177,6 +182,17 @@ Line::Line(std::shared_ptr<Line> line, const QJsonObject &json) {
     } else {
         m_styles = line->m_styles;
     }
+}
+
+Line & Line::operator=(const Line &line)
+{
+	if (this == &line) {
+		return *this;
+	}
+	m_text = line.m_text;
+	m_cursor = line.m_cursor;
+	m_styles = line.m_styles;
+	return *this;
 }
 
 } // namespace xi

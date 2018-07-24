@@ -39,6 +39,8 @@ EditView::EditView(const std::shared_ptr<File> &file, const std::shared_ptr<Core
     layout->addWidget(m_scrollBarV, 1, 2);
     layout->addWidget(m_scrollBarH, 2, 1);
     layout->setContentsMargins(0, 0, 0, 0);
+	layout->setMargin(0);
+	layout->setSpacing(0);
     this->setLayout(layout);
 
     connect(m_scrollBarV, &QScrollBar::valueChanged, this, &EditView::scrollBarVChanged);
@@ -82,6 +84,7 @@ void EditView::scrollHandler(int line, int column) {
 }
 
 void EditView::themeChangedHandler(const QString &name, const Theme &theme) {
+
 }
 
 void EditView::resizeEvent(QResizeEvent *event) {
@@ -94,23 +97,23 @@ void EditView::keyPressEvent(QKeyEvent *e) {
 }
 
 void EditView::relayoutScrollBar() {
-    auto contentHeight = m_content->height();
-    auto contentWidth = m_content->width();
+    auto widgetHeight = m_content->height();
+    auto widgetWidth = m_content->width();
     auto linespace = m_content->getLineSpace();
 
-    auto linesHeight = m_content->getLinesHeight();
-    m_scrollBarV->setRange(0, linesHeight - linespace); // keep one line
+    auto contentHeight = m_content->getContentHeight();
+    m_scrollBarV->setRange(0, contentHeight - linespace); // keep one line
     m_scrollBarV->setSingleStep(m_content->getLineSpace());
-    m_scrollBarV->setPageStep(contentHeight);
-    m_scrollBarV->setVisible(linesHeight > contentHeight);
+    m_scrollBarV->setPageStep(widgetHeight);
+    m_scrollBarV->setVisible(contentHeight > widgetHeight);
 
     auto maxLineWidth = m_content->getMaxLineWidth();
-    auto maxCharWidth = m_content->getCharWidth();
+    auto maxCharWidth = m_content->getMaxCharWidth();
     auto xOff = m_content->getXOff();
     m_scrollBarH->setRange(0, maxLineWidth);
     m_scrollBarH->setSingleStep(maxCharWidth);
-    m_scrollBarH->setPageStep(contentWidth);
-    auto visible = (maxLineWidth + xOff + maxCharWidth / 2.f > contentWidth);
+    m_scrollBarH->setPageStep(widgetWidth);
+    auto visible = (maxLineWidth + xOff + maxCharWidth / 2.f > widgetWidth);
     if (!visible && m_content->getScrollOrigin().x() != 0) visible = true;
     m_scrollBarH->setVisible(visible);
 }

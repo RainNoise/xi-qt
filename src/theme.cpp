@@ -41,29 +41,11 @@ const char *names[] = {
     "tags_options",
 };
 
-/*
-return Theme(foreground: NSColor.black,
-background: NSColor.white,
-caret: NSColor.black,
-lineHighlight: nil,
-findHighlight: NSColor(deviceWhite: 0.8, alpha: 0.4),
-findHighlightForeground: nil,
-gutter: NSColor(deviceWhite: 0.9, alpha: 1.0),
-gutterForeground: NSColor(deviceWhite: 0.5, alpha: 1.0),
-selection: NSColor.selectedTextBackgroundColor,
-selectionForeground: NSColor.selectedTextColor,
-selectionBorder: nil,
-inactiveSelection: NSColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1.0),
-inactiveSelectionForeground: NSColor.selectedTextColor,
-shadow: nil
-)
-*/
 ThemeInfo defaultThemeInfo() {
     ThemeInfo info;
-    info.foreground(Qt::black);
-    info.background(Qt::white);
-    info.caret(Qt::black);
-    info.find_highlight();
+    info.foreground(QColor::fromRgb(255, 215, 0));
+    info.background(Qt::black);
+    info.caret(QColor::fromRgb(220, 220, 220));
     return info;
 }
 
@@ -95,12 +77,12 @@ Theme::Theme(const QJsonObject &json) {
             element.type = ThemeElement::Color;
             element.color = to_color(json[names[i]].toObject());
         } else if (value.isString()) {
-            element.type = ThemeElement::String;
-            element.str = value.toString();
+            element.type = ThemeElement::Option;
+            element.option = value.toString();
         }
     }
     m_info = info;
-    // m_info.merge(defaultThemeInfo());
+    //m_info.merge(defaultThemeInfo());
 }
 
 Theme::Theme(const ThemeInfo &info) {

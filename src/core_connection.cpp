@@ -166,23 +166,23 @@ void CoreConnection::sendSetTheme(const QString &themeName) {
     sendNotification("set_theme", object);
 }
 
-void CoreConnection::sendScroll(const QString &viewId, int64_t firstLine, int64_t lastLine) {
+void CoreConnection::sendScroll(const QString &viewId, qint64 firstLine, qint64 lastLine) {
     QJsonArray object;
     object.append(firstLine);
     object.append(lastLine);
     sendEditArray(viewId, "scroll", object);
 }
 
-void CoreConnection::sendClick(const QString &viewId, int64_t line, int64_t column, int64_t modifiers, int64_t clickCount) {
+void CoreConnection::sendClick(const QString &viewId, qint64 line, qint64 column, qint64 modifiers, qint64 clickCount) {
     QJsonArray object;
     object.append(line);
     object.append(column);
     object.append(modifiers);
     object.append(clickCount);
-    sendEditArray(viewId, "click", object);
+    sendEditArray(viewId, "gesture", object);
 }
 
-void CoreConnection::sendDrag(const QString &viewId, int64_t line, int64_t column, int64_t modifiers) {
+void CoreConnection::sendDrag(const QString &viewId, qint64 line, qint64 column, qint64 modifiers) {
     QJsonArray object;
     object.append(line);
     object.append(column);
@@ -190,7 +190,7 @@ void CoreConnection::sendDrag(const QString &viewId, int64_t line, int64_t colum
     sendEditArray(viewId, "drag", object);
 }
 
-void CoreConnection::sendGesture(const QString &viewId, int64_t line, int64_t col, const QString &ty) {
+void CoreConnection::sendGesture(const QString &viewId, qint64 line, qint64 col, const QString &ty) {
     QJsonObject object;
     object["line"] = line;
     object["col"] = col;
@@ -231,6 +231,7 @@ void CoreConnection::sendFindPrevious(const QString &viewId, bool wrapAround) {
 //}
 
 // readAllStandardOutput
+// "Usage of click is deprecated; use do_gesture\n"
 void CoreConnection::stdoutReceivedHandler() {
     qDebug() << "stdoutReceivedHandler";
 
@@ -243,9 +244,11 @@ void CoreConnection::stdoutReceivedHandler() {
             } else {
                 if (buf.size() != 0) {
                     auto newLine = buf + line;
+                    qDebug() << newLine;
                     handleRaw(newLine);
                     buf.clear();
                 } else {
+                    qDebug() << line;
                     handleRaw(line);
                 }
             }
@@ -287,7 +290,7 @@ void CoreConnection::handleRaw(const QByteArray &bytes) {
 
 void CoreConnection::handleRpc(const QJsonObject &json) {
     if (json["id"].isDouble()) { // number
-        auto index = json["id"].toInt();
+        auto index = json["id"].toVariant().toLongLong();
         if (json["result"].isString()) { // is response
             QJsonObject result;
             result["result"] = json["result"]; // copy?
@@ -296,7 +299,7 @@ void CoreConnection::handleRpc(const QJsonObject &json) {
                 auto handler = it.value();
                 m_pending.erase(it);
                 if (handler.type() == ResponseHandler::Emit) {
-                    result["user"] = handler.getEmitData();
+                    result["emit"] = handler.getEmitData();
                     emit RpcResponseReady(result);
                 } else {
                     handler.invoke(result);
@@ -369,18 +372,18 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
         emit availablePluginsReceived(viewIdentifier, plugins);
     } break;
     case Notification_UpdateCmds: {
-        //            auto plugin = params["plugin"].toString();
-        //            QVector<QJsonObject> cmds;
-        //            QJsonArray array = params["cmds"].toArray();
-        //            foreach (const QJsonValue &v, array) {
-        //                cmds.push_front(v.toObject());
-        //            }
-        //            emit updateCommandsReceived(viewIdentifier, line, column);
+        //auto plugin = params["plugin"].toString();
+        //QVector<QJsonObject> cmds;
+        //QJsonArray array = params["cmds"].toArray();
+        //foreach (const QJsonValue &v, array) {
+        //    cmds.push_front(v.toObject());
+        //}
+        //emit updateCommandsReceived(viewIdentifier, line, column);
     } break;
     case Notification_ConfigChanged: {
-        //            auto line = params["line"].toInt();
-        //            auto column = params["col"].toInt();
-        //            emit configChangedReceived(viewIdentifier, line, column);
+        //auto line = params["line"].toInt();
+        //auto column = params["col"].toInt();
+        //emit configChangedReceived(viewIdentifier, line, column);
     } break;
     case Notification_Alert: {
         auto message = params["msg"].toString();
@@ -413,7 +416,7 @@ ResponseHandler::ResponseHandler(CallbackType callback /*= nullptr*/) {
 ResponseHandler::ResponseHandler(const ResponseHandler &handler) {
     m_callback = std::move(handler.m_callback);
     m_type = handler.m_type;
-    m_userData = handler.m_userData;
+    m_emitData = handler.m_emitData;
 }
 
 ResponseHandler::ResponseHandler(const QJsonObject &data) {
@@ -427,7 +430,7 @@ void ResponseHandler::invoke(const QJsonObject &json) {
 ResponseHandler &ResponseHandler::operator=(const ResponseHandler &handler) {
     m_callback = std::move(handler.m_callback);
     m_type = handler.m_type;
-    m_userData = handler.m_userData;
+    m_emitData = handler.m_emitData;
     return *this;
 }
 
@@ -441,11 +444,11 @@ void ResponseHandler::type(Type type) {
 
 void ResponseHandler::setEmitData(const QJsonObject &data) {
     m_type = Emit;
-    m_userData = data;
+    m_emitData = data;
 }
 
 QJsonObject ResponseHandler::getEmitData() const {
-    return m_userData;
+    return m_emitData;
 }
 
 //void WriteCoreStdinThread::run() {

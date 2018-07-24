@@ -4,12 +4,6 @@
 
 namespace xi {
 
-StyleSpan::StyleSpan(StyleIdentifier style, RangeI range) : m_style(style), m_range(range) {
-}
-
-StyleSpan::StyleSpan() : m_style(-1) {
-}
-
 std::shared_ptr<QVector<StyleSpan>> StyleSpan::styles(const QJsonArray &json, const QString &text) {
     auto vss = std::make_shared<QVector<StyleSpan>>();
     auto ix = 0;

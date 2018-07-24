@@ -20,14 +20,14 @@ public:
         return m_pair.second;
     }
     inline T size() const {
-        return m_pair.second - m_pair.first + 1;
+        return m_pair.second - m_pair.first;
     }
 
 private:
     QPair<T, T> m_pair;
 };
 
-using RangeI = Range<qint64>;
+using RangeI = Range<int>;
 using RangeF = Range<qreal>;
 
 } // namespace xi

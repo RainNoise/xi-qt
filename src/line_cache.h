@@ -26,20 +26,12 @@ public:
     // Line(const Line *line, const QJsonObject &object);
     Line(std::shared_ptr<Line> line, const QJsonObject &object);
 
-    Line &operator=(const Line &line) {
-        if (this == &line) {
-            return *this;
-        }
-        m_text = line.m_text;
-        m_cursor = line.m_cursor;
-        m_styles = line.m_styles;
-        return *this;
-    }
+    Line &operator=(const Line &line);
 
     QString getText() {
         return m_text;
     }
-    std::shared_ptr<QVector<qint32>> getCursor() {
+    std::shared_ptr<QVector<int>> getCursor() {
         return m_cursor;
     }
     std::shared_ptr<QVector<StyleSpan>> getStyles() {
@@ -48,7 +40,7 @@ public:
 
 private:
     QString m_text;
-    std::shared_ptr<QVector<qint32>> m_cursor;
+    std::shared_ptr<QVector<int>> m_cursor;
     std::shared_ptr<QVector<StyleSpan>> m_styles;
 };
 
@@ -66,14 +58,15 @@ public:
     explicit LineCache();
     void applyUpdate(const QJsonObject &json);
     inline int height() { return m_height; }
+	std::shared_ptr<Line> getLine(int ix);
     std::vector<std::shared_ptr<Line>> getLines(const RangeI &range);
 
 private:
     std::vector<std::shared_ptr<Line>> m_lines;
-    qint32 m_height;
-    qint32 m_invalidBefore;
-    qint32 m_invalidAfter;
-    qint32 m_revision;
+	int m_height;
+	int m_invalidBefore;
+	int m_invalidAfter;
+	int m_revision;
 };
 
 } // namespace xi

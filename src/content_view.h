@@ -17,23 +17,6 @@
 
 namespace xi {
 
-struct PaintInfo {
-    qint64 first;
-    qint64 last;
-    qreal linespace;
-    qreal maxLineWidth;
-};
-
-struct VisibleLines {
-    VisibleLines(int first, int last) : first(first), last(last) {
-    }
-    int first;
-    int last;
-    int lines() {
-        return last - first + 1;
-    }
-};
-
 class EditViewDataSource {
 public:
     EditViewDataSource() {
@@ -75,18 +58,25 @@ protected:
 
 public:
     std::shared_ptr<File> getFile() const;
-    int getLines();
+	int getLines();
+	qreal getTopPad();
     qreal getMaxLineWidth();
-    qint64 getLinesHeight();
-    int getLineSpace();
-    int getCharWidth();
+	int getLinesHeight();
+	int getContentHeight();
+	int getLineSpace();
+	int getMaxCharWidth();
     QPoint getScrollOrigin();
-    int getXOff();
+	int getXOff();
+
+	int getLine(int y);
+	int getColumn(int line, int x);
+
     int checkLineVisible(int line);
     qreal getLineColumnWidth(int line, int column);
     int checkLineColumnPosition(int line, int column);
-    QPair<qint64, qint64> posToLineColumn(const QPoint &pos);
-    VisibleLines getFirstLastVisibleLines(const QRect &bound);
+    QPair<int, int> posToLineColumn(const QPoint &pos);
+	QPair<int, int> getFirstLastVisibleLines(const QRect &bound);
+
     void scrollY(int y);
     void scrollX(int x);
 
@@ -160,10 +150,11 @@ private:
     std::shared_ptr<EditViewDataSource> m_dataSource;
     const static qreal m_x0;
     QPoint m_scrollOrigin;
-    int m_firstLine;
-    int m_visibleLines;
+	int m_firstLine;
+	int m_visibleLines;
     qreal m_maxLineWidth;
     QHash<QString, QString> m_selectorToCommand;
+	QPointF m_margin;
 };
 } // namespace xi
 

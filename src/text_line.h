@@ -6,11 +6,13 @@
 #include <QObject>
 #include <QPainter>
 #include <QTextLayout>
+#include <QTextCharFormat>
 
 #include <memory>
 
 #include "font.h"
 #include "range.h"
+#include "style_span.h"
 
 namespace xi {
 
@@ -45,10 +47,8 @@ public:
 protected:
     std::shared_ptr<Font> m_font;
     QString m_text;
-    //qreal m_width;
-    // Style spans (internally in utf-8 code units). Arguably could be resolved
-    // to floats.
-    //std::shared_ptr<QVector<StyleSpan>> m_styles;
+
+    std::shared_ptr<QVector<StyleSpan>> m_styles;
     std::shared_ptr<QFontMetricsF> m_fontMetrics;
     std::shared_ptr<QTextLayout> m_layout;
     std::shared_ptr<QVector<SelRange>> m_selRanges;
@@ -66,28 +66,7 @@ public:
     }
 
     // init QTextLayout
-    std::shared_ptr<TextLine> build() {
-        auto textline = std::make_shared<TextLine>(m_text, m_font);
-        int leading = textline->metrics()->leading();
-        auto lineWidth = textline->metrics()->width(m_text); // slow
-        //auto lineWidth = 10000;
-        qreal height = 0;
-        textline->layout()->setCacheEnabled(true);
-        textline->layout()->beginLayout();
-        while (1) {
-            QTextLine qline = textline->layout()->createLine();
-            if (!qline.isValid())
-                break;
-
-            qline.setLineWidth(lineWidth);
-            height += leading;
-            qline.setPosition(QPointF(0, height));
-            height += qline.height();
-        }
-        textline->layout()->endLayout();
-
-        return textline;
-    }
+    std::shared_ptr<TextLine> build();
 
 private:
     std::shared_ptr<Font> m_font;
@@ -97,14 +76,7 @@ private:
 
 class Painter {
 public:
-    static void drawLineBg(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, const RangeF &y) {
-        auto selRanges = line->selRanges();
-        foreach (const SelRange selRange, *selRanges) {
-            QRect rect;
-            selRange.range;
-            painter.fillRect(rect, selRange.color);
-        }
-    }
+    static void drawLineBg(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, const RangeF &y);
 
     static void drawLine(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, qreal y) {
         line->layout()->draw(&painter, QPoint(x, y));

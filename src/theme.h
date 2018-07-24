@@ -11,12 +11,12 @@ namespace xi {
 struct ThemeElement {
     enum Type {
         Color,
-        String,
+		Option,
         Null,
     };
 
     QColor color;
-    QString str;
+    QString option;
     Type type;
 
     ThemeElement() {
@@ -38,8 +38,8 @@ struct ThemeElement {
         type = ele.type;
         if (type == Color) {
             color = ele.color;
-        } else if (type == String) {
-            str = ele.str;
+        } else if (type == Option) {
+			option = ele.option;
         }
         return *this;
     }
@@ -90,7 +90,7 @@ public:
 
 protected:
     void merge(const ThemeInfo &info);
-
+	QString m_name;
     QHash<QString, ThemeElement> m_elements;
 };
 
