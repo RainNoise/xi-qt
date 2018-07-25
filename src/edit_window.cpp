@@ -9,6 +9,7 @@
 #include "edit_window.h"
 #include "perference.h"
 #include "shortcuts.h"
+#include "style_map.h"
 
 namespace xi {
 
@@ -213,6 +214,7 @@ void EditWindow::saveAllTab() {
 }
 
 void EditWindow::updateHandler(const QString &viewId, const QJsonObject &update) {
+    // TODO ASYNC
     auto view = dynamic_cast<EditView *>(m_router[viewId]);
     if (view) view->updateHandler(update);
 }
@@ -237,7 +239,14 @@ void EditWindow::updateCommandsHandler(const QString &viewId, const QVector<QStr
 void EditWindow::configChangedHandler(const QString &viewId, const QJsonObject &changes) {
 }
 
-void EditWindow::defineStyleHandler(const QJsonObject &params) {
+void EditWindow::defineStyleHandler(const QJsonObject &json) {
+    // TODO ASYNC
+    //auto styleMap = Perference::shared()->styleMap();
+    //styleMap->defStyle(json);
+
+    auto styleMap = Perference::shared()->styleMap();
+    styleMap.defStyle(json);
+    Perference::shared()->styleMap(styleMap);
 }
 
 void EditWindow::availableThemesHandler(const QVector<QString> &themes) {

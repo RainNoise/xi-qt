@@ -45,13 +45,4 @@ QString File::displayName() const {
     return m_path.isEmpty() ? tempName() : name();
 }
 
-//FileBase* FileBase::shared() {
-//	static FileBase base;
-//	return &base;
-//}
-//
-//File FileBase::create(const QString& path) {
-//
-//}
-
 } // namespace xi

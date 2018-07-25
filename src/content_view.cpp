@@ -20,7 +20,7 @@ ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_pt
 
     m_connection = connection;
     m_file = file;
-    m_dataSource = std::make_shared<EditViewDataSource>();
+    m_dataSource = std::make_shared<DataSource>();
     {
         QString family = "Inconsolata";
         int size = 14; // 1920x1080
@@ -38,10 +38,13 @@ ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_pt
     m_visibleLines = 0;
     m_maxLineWidth = 0;
 
+    m_padding.setLeft(2);
+    m_padding.setTop(0);
+    m_padding.setRight(0);
+    m_padding.setBottom(0);
+
     initSelectCommand();
 }
-
-const qreal ContentView::m_x0 = 2.0f;
 
 bool ContentView::event(QEvent *e) {
     if (e->type() == QEvent::KeyPress) {
@@ -62,23 +65,13 @@ void ContentView::paintEvent(QPaintEvent *event) {
 
 void ContentView::resizeEvent(QResizeEvent *event) {
     auto size = event->size();
-    //QRect viewRect(0, 0, size.width(), size.height());
-    //auto fl = getFirstLastVisibleLines(viewRect);
-    //auto lines = fl.lines();
-    //m_firstLine = fl.first;
 
-    //if (lines != m_totalVisibleLines) {
-    //	m_connection->sendScroll(m_file->viewId(), m_firstLine, m_firstLine + lines);
-    //	m_totalVisibleLines = lines;
-    //}
-
-    auto linespace = getLineSpace();
+    auto linespace = getLinespace();
     auto visibleLines = std::ceil(size.height() / qreal(linespace));
     if (m_visibleLines != visibleLines) {
         m_visibleLines = visibleLines;
         m_connection->sendScroll(m_file->viewId(), m_firstLine, m_firstLine + m_visibleLines);
     }
-
     QWidget::resizeEvent(event);
 }
 
@@ -92,7 +85,7 @@ void ContentView::sendEdit(const QString &method) {
 QPair<int, int> ContentView::getFirstLastVisibleLines(const QRect &bound) {
     auto linespace = m_dataSource->fontMetrics->height();
     auto topPad = linespace - m_dataSource->fontMetrics->ascent();
-    auto xOff = m_dataSource->gutterWidth + m_x0 - m_scrollOrigin.x();
+    auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
     auto yOff = topPad - m_scrollOrigin.y();
 
     auto firstVisible = qMax(0, (int)(std::ceil((bound.y() - topPad + m_scrollOrigin.y()) / linespace)));
@@ -119,7 +112,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
 
     auto linespace = m_dataSource->fontMetrics->height();
     auto topPad = linespace - m_dataSource->fontMetrics->ascent();
-    auto xOff = m_dataSource->gutterWidth + m_x0 - m_scrollOrigin.x();
+    auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
     auto yOff = topPad - m_scrollOrigin.y();
 
     auto firstVisible = qMax(0, (int)(std::ceil((dirtyRect.y() - topPad + m_scrollOrigin.y()) / linespace)));
@@ -269,14 +262,14 @@ qreal ContentView::getMaxLineWidth() {
 }
 
 int ContentView::getLinesHeight() {
-    return getLines() * getLineSpace();
+    return getLines() * getLinespace();
 }
 
 int ContentView::getContentHeight() {
     return getLinesHeight() + getTopPad();
 }
 
-int ContentView::getLineSpace() {
+int ContentView::getLinespace() {
     return m_dataSource->fontMetrics->height();
 }
 
@@ -289,11 +282,11 @@ QPoint ContentView::getScrollOrigin() {
 }
 
 int ContentView::getXOff() {
-    return std::ceil(m_dataSource->gutterWidth + m_x0);
+    return std::ceil(m_dataSource->gutterWidth + m_padding.left());
 }
 
 int ContentView::getLine(int y) {
-    return qMax(0, (int)(m_scrollOrigin.y() + y - getTopPad()) / getLineSpace());
+    return qMax(0, (int)(m_scrollOrigin.y() + y - getTopPad()) / getLinespace());
 }
 
 int ContentView::getColumn(int line, int x) {
@@ -354,11 +347,10 @@ int ContentView::checkLineColumnPosition(int line, int column) {
 
 QPair<int, int> ContentView::posToLineColumn(const QPoint &pos) {
     auto viewRect = rect();
-    QPair<int, int> result(0, 0);
 
     auto linespace = m_dataSource->fontMetrics->height();
     auto topPad = linespace - m_dataSource->fontMetrics->ascent();
-    auto xOff = m_dataSource->gutterWidth + m_x0 - m_scrollOrigin.x();
+    auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
     auto yOff = topPad - m_scrollOrigin.y();
 
     auto firstVisible = std::max(0, (int)(std::ceil((viewRect.y() - topPad + m_scrollOrigin.y()) / linespace)));
@@ -370,6 +362,8 @@ QPair<int, int> ContentView::posToLineColumn(const QPoint &pos) {
     auto first = std::min(totalLines, firstVisible);
     auto last = std::min(totalLines, lastVisible);
 
+     QPair<int, int> result(last, 0);
+
     auto lines = lineCache->getLines(RangeI(first, last + 1)); // fix
 
     auto font = m_dataSource->defaultFont;
@@ -378,8 +372,10 @@ QPair<int, int> ContentView::posToLineColumn(const QPoint &pos) {
     if (lineNum > last) return result;
     auto line = lines[lineNum - first];
 
+    if (!line) return result;
+
     auto textline = std::make_shared<TextLine>(line->getText(), font);
-    auto column = textline->xToIndex(pos.x() - m_x0 - m_dataSource->gutterWidth);
+    auto column = textline->xToIndex(pos.x() - m_padding.left() - m_dataSource->gutterWidth);
 
     result.first = lineNum;
     result.second = column;
@@ -389,7 +385,7 @@ QPair<int, int> ContentView::posToLineColumn(const QPoint &pos) {
 
 void ContentView::scrollY(int y) {
     auto value = y - getTopPad();
-    auto linespace = getLineSpace();
+    auto linespace = getLinespace();
     auto lines = getLines();
     if (lines == 0) return;
 
@@ -401,22 +397,6 @@ void ContentView::scrollY(int y) {
     }
     m_scrollOrigin.setY(m_firstLine * linespace);
     update();
-
-    //auto check = (m_scrollOrigin.y() > y) ? -1 : 1;
-    // pagedown, pageup会出错
-    //m_scrollOrigin.setY(m_scrollOrigin.y() + check*linespace);
-    //m_scrollOrigin.setY(y);
-    //auto viewRect = rect();
-    //auto fl = getFirstLastVisibleLines(viewRect);
-    //auto lines = fl.lines();
-
-    //if (m_firstLine != fl.first)
-    //{
-    //	m_firstLine = fl.first;
-    //	m_connection->sendScroll(m_file->viewId(), fl.first, fl.last);
-    //	m_totalVisibleLines = lines;
-    //}
-    //update();
 }
 
 void ContentView::scrollX(int x) {
@@ -448,6 +428,7 @@ void ContentView::keyPressEvent(QKeyEvent *ev) {
         deleteBackward();
         return;
     case Qt::Key_Return:
+    case Qt::Key_Enter:
         insertNewline();
         return;
     case Qt::Key_Home:

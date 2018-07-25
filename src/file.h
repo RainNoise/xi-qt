@@ -6,42 +6,6 @@
 
 namespace xi {
 
-//struct FileInfo {
-//	QString path;
-//	QString name;
-//	QString viewId;
-//	QWidget* widget;
-//	bool memory;
-//};
-
-//class RecentFileList {
-//
-//};
-
-// database??
-// FileBase::shared()->create("");
-//
-
-//class FileBase {
-//public:
-//	static FileBase* shared();
-//
-//	File open(const QString& path);
-//
-//	void close();
-//
-//	void update(const File& file);
-//
-//private:
-//	QVector<File> m_files;
-//
-//	FileBase();
-//};
-
-//class FileInfoManager {
-//
-//};
-
 class File {
 public:
     File();

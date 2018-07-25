@@ -56,6 +56,7 @@ void XiMainWindow::setupCore() {
     }
     QString clientExtrasDir = dir.absolutePath();
     m_coreConnection->sendClientStarted(configDir, clientExtrasDir);
+    //m_coreConnection->sendClientStarted(QString(), QString());
 
     //default theme
     m_coreConnection->sendSetTheme(XI_THEME);

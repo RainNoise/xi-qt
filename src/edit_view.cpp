@@ -56,7 +56,7 @@ void EditView::updateHandler(const QJsonObject &json) {
 }
 
 void EditView::scrollHandler(int line, int column) {
-    auto linespace = m_content->getLineSpace();
+    auto linespace = m_content->getLinespace();
     auto lines = m_content->getLines();
     auto value = m_scrollBarV->value();
     auto nextLine = line + 1;
@@ -102,11 +102,11 @@ void EditView::keyPressEvent(QKeyEvent *e) {
 void EditView::relayoutScrollBar() {
     auto widgetHeight = m_content->height();
     auto widgetWidth = m_content->width();
-    auto linespace = m_content->getLineSpace();
+    auto linespace = m_content->getLinespace();
 
     auto contentHeight = m_content->getContentHeight();
     m_scrollBarV->setRange(0, contentHeight - linespace); // keep one line
-    m_scrollBarV->setSingleStep(m_content->getLineSpace());
+    m_scrollBarV->setSingleStep(m_content->getLinespace());
     m_scrollBarV->setPageStep(widgetHeight);
     m_scrollBarV->setVisible(contentHeight > widgetHeight);
 
@@ -123,7 +123,7 @@ void EditView::relayoutScrollBar() {
 
 void EditView::wheelEvent(QWheelEvent *event) {
     if (m_scrollBarV->isVisible()) {
-        auto linespace = m_content->getLineSpace();
+        auto linespace = m_content->getLinespace();
         auto delta = -(event->delta() / (120) * (linespace * 3));
         auto v = m_scrollBarV->value();
         m_scrollBarV->setValue(v + delta);

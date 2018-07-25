@@ -150,9 +150,10 @@ private:
 class ReadCoreStdoutThread : public QThread {
     Q_OBJECT
 public:
-    ReadCoreStdoutThread(const std::shared_ptr<QProcess> &core) {
+    ReadCoreStdoutThread(const std::shared_ptr<QProcess> &process) {
         setObjectName("ReadCoreStdoutThread");
-        m_core = core;
+        m_process = process;
+        // connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &CoreConnection::stdoutReceivedHandler);
     }
     void run() override;
 
@@ -162,7 +163,7 @@ signals:
 public slots:
 
 private:
-    std::shared_ptr<QProcess> m_core;
+    std::shared_ptr<QProcess> m_process;
     QBuffer m_readBuffer;
 };
 

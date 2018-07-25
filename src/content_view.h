@@ -5,6 +5,7 @@
 #include <QFontMetrics>
 #include <QFontMetricsF>
 #include <QGridLayout>
+#include <QMargins>
 #include <QPoint>
 #include <QScrollArea>
 
@@ -17,18 +18,17 @@
 
 namespace xi {
 
-class EditViewDataSource {
+// TODO (CV)
+class DataSource {
 public:
-    EditViewDataSource() {
+    DataSource() {
         lines = std::make_shared<LineCache>();
     }
-    // settings
     std::shared_ptr<Font> defaultFont;
-    // V2 todo:
-    //std::shared_ptr<XiFont> cjkFont;
+    // TODO
+    //std::shared_ptr<Font> cjkFont;
     //bool cjkFontEnable;
     std::shared_ptr<LineCache> lines;
-    //std::shared_ptr<Theme> theme;
     std::shared_ptr<StyleMap> styleMap;
     std::shared_ptr<QFontMetricsF> fontMetrics;
     qreal gutterWidth;
@@ -63,7 +63,7 @@ public:
     qreal getMaxLineWidth();
     int getLinesHeight();
     int getContentHeight();
-    int getLineSpace();
+    int getLinespace();
     int getMaxCharWidth();
     QPoint getScrollOrigin();
     int getXOff();
@@ -147,14 +147,13 @@ public:
 private:
     std::shared_ptr<File> m_file;
     std::shared_ptr<CoreConnection> m_connection;
-    std::shared_ptr<EditViewDataSource> m_dataSource;
-    const static qreal m_x0;
+    std::shared_ptr<DataSource> m_dataSource; //owned
     QPoint m_scrollOrigin;
     int m_firstLine;
     int m_visibleLines;
     qreal m_maxLineWidth;
     QHash<QString, QString> m_selectorToCommand;
-    QPointF m_margin;
+    QMarginsF m_padding;
 };
 } // namespace xi
 

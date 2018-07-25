@@ -282,7 +282,8 @@ void CoreConnection::stdoutReceivedHandler() {
 void CoreConnection::handleRaw(const QByteArray &bytes) {
     auto doc = QJsonDocument::fromJson(bytes);
     if (doc.isNull()) {
-        qFatal("malformed json %s", bytes);
+        return;
+        // qFatal("malformed json %s", bytes);
     }
     auto json = doc.object();
     handleRpc(json);
@@ -467,9 +468,9 @@ QJsonObject ResponseHandler::getEmitData() const {
 
 void ReadCoreStdoutThread::run() {
     while (1) {
-        if (!m_core) break;
-        if (m_core->canReadLine()) {
-            auto line = m_core->readLine();
+        if (!m_process) break;
+        if (m_process->canReadLine()) {
+            auto line = m_process->readLine();
             emit resultReady(line);
         }
         //if (m_core->bytesAvailable() > 0) {

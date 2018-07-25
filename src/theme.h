@@ -67,6 +67,9 @@ public:
     Theme(const Theme &info);
     explicit Theme(const QString &name, const QJsonObject &json);
     Theme &operator=(const Theme &theme);
+    QString name() const {
+        return m_name;
+    }
 
 public:
     THEME_ELEMENT_METHOD(accent);
@@ -106,6 +109,25 @@ private:
     void merge(const Theme &info);
     QString m_name;
     QHash<QString, ThemeElement> m_elements;
+};
+
+class ThemeList {
+public:
+    Theme get(const QString &name) {
+        return m_themes[name];
+    }
+    void append(const QString &name, const Theme &theme) {
+        m_themes[name] = theme;
+    }
+    void remove(const QString &name) {
+
+    }
+    bool contains(const QString &name) {
+        return m_themes.contains(name);
+    }
+
+private:
+    QHash<QString, Theme> m_themes;
 };
 
 } // namespace xi
