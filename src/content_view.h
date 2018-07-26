@@ -5,6 +5,7 @@
 #include <QFontMetrics>
 #include <QFontMetricsF>
 #include <QGridLayout>
+#include <QOpenGLWidget>
 #include <QMargins>
 #include <QPoint>
 #include <QScrollArea>
@@ -18,6 +19,7 @@
 #include "line_cache.h"
 
 //! TODO: OPENGL
+//#define OPENGL_WIDGET
 
 namespace xi {
 
@@ -41,7 +43,11 @@ public:
     void TypeName() { sendEdit(m_selectorToCommand[#TypeName]); }
 
 // Main Content
+#ifdef OPENGL_WIDGET
+class ContentView : public QOpenGLWidget {
+#else
 class ContentView : public QWidget {
+#endif
     Q_OBJECT
 public:
     ContentView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent);

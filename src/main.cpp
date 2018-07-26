@@ -2,9 +2,14 @@
 
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QSurfaceFormat>
 
 int main(int argc, char *argv[]) {
     // load config
+
+    QSurfaceFormat fmt;
+    fmt.setSamples(4);
+    QSurfaceFormat::setDefaultFormat(fmt);
 
     // launch exe
     QApplication a(argc, argv);

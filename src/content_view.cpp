@@ -8,8 +8,12 @@
 
 namespace xi {
 
-ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent) : QWidget(parent) {
-
+ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent) : 
+#ifdef OPENGL_WIDGET
+QOpenGLWidget(parent) {
+#else
+QWidget(parent) {
+#endif
     //setAttribute(Qt::WA_OpaquePaintEvent);
     setAttribute(Qt::WA_KeyCompression, false);
     setAttribute(Qt::WA_KeyboardFocusChange);
@@ -27,7 +31,8 @@ ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_pt
         int weight = QFont::Normal; // OpenType weight value
         bool italic = false;
         QFont font(family, size, weight, italic);
-        font.setStyleHint(QFont::TypeWriter, QFont::StyleStrategy(QFont::PreferDefault | QFont::ForceIntegerMetrics));
+        // PreferQuality PreferDefault PreferAntialias
+        font.setStyleHint(QFont::Monospace, QFont::StyleStrategy(QFont::PreferDefault | QFont::ForceIntegerMetrics)); 
         font.setFixedPitch(true);
         font.setKerning(false);
         m_dataSource->defaultFont = std::make_shared<Font>(font);
@@ -54,13 +59,27 @@ bool ContentView::event(QEvent *e) {
             return true;
         }
     }
+#ifdef OPENGL_WIDGET
+    return QOpenGLWidget::event(e);
+#else
     return QWidget::event(e);
+#endif    
 }
 
 void ContentView::paintEvent(QPaintEvent *event) {
+
+#ifdef OPENGL_WIDGET
+    QPainter painter;
+    painter.begin(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    auto dirtyRect = event->rect(); //simple
+    paint(painter, dirtyRect);
+    painter.end();
+#else
     QPainter painter(this);
     auto dirtyRect = event->rect(); //simple
     paint(painter, dirtyRect);
+#endif
 }
 
 void ContentView::resizeEvent(QResizeEvent *event) {
@@ -72,7 +91,12 @@ void ContentView::resizeEvent(QResizeEvent *event) {
         m_visibleLines = visibleLines;
         m_connection->sendScroll(m_file->viewId(), m_firstLine, m_firstLine + m_visibleLines);
     }
+#ifdef OPENGL_WIDGET
+    QOpenGLWidget::resizeEvent(event);
+#else
     QWidget::resizeEvent(event);
+#endif   
+    
 }
 
 void ContentView::sendEdit(const QString &method) {
