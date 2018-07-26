@@ -143,16 +143,21 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
             textLines.append(nullptr);
             continue;
         }
-        auto builder = std::make_shared<TextLineBuilder>(line->getText(), font);
-        builder->setFgColor(theme.foreground());
-        styleMap.applyStyles(builder, line->getStyles(), theme.selection(), theme.highlight());
-        auto textLine = builder->build();
-        textLines.append(textLine);
-        maxLineWidth = std::max(maxLineWidth, textLine->width());
-        line->setAssoc(textLine);
-        //auto y0 = yOff + linespace * lineIx;
-        //RangeF yRange(y0, y0 + linespace);
-        //Painter::drawLineBg(renderer, textLine, xOff, yRange);
+        auto textLine = line->assoc();
+        if (textLine) {
+            textLines.append(textLine);
+        } else {
+            auto builder = std::make_shared<TextLineBuilder>(line->getText(), font);
+            builder->setFgColor(theme.foreground());
+            styleMap.applyStyles(builder, line->getStyles(), theme.selection(), theme.highlight());
+            textLine = builder->build();
+            textLines.append(textLine);
+            maxLineWidth = std::max(maxLineWidth, textLine->width());
+            line->setAssoc(textLine);
+            //auto y0 = yOff + linespace * lineIx;
+            //RangeF yRange(y0, y0 + linespace);
+            //Painter::drawLineBg(renderer, textLine, xOff, yRange);        
+        }
     }
 
     if (maxLineWidth != m_maxLineWidth) {
