@@ -9,7 +9,7 @@
 namespace xi {
 
 ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent) : 
-#ifdef OPENGL_WIDGET
+#ifdef ENABLE_GPU_RENDERING
 QOpenGLWidget(parent) {
 #else
 QWidget(parent) {
@@ -59,7 +59,7 @@ bool ContentView::event(QEvent *e) {
             return true;
         }
     }
-#ifdef OPENGL_WIDGET
+#ifdef ENABLE_GPU_RENDERING
     return QOpenGLWidget::event(e);
 #else
     return QWidget::event(e);
@@ -68,7 +68,7 @@ bool ContentView::event(QEvent *e) {
 
 void ContentView::paintEvent(QPaintEvent *event) {
 
-#ifdef OPENGL_WIDGET
+#ifdef ENABLE_GPU_RENDERING
     QPainter painter;
     painter.begin(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -91,7 +91,7 @@ void ContentView::resizeEvent(QResizeEvent *event) {
         m_visibleLines = visibleLines;
         m_connection->sendScroll(m_file->viewId(), m_firstLine, m_firstLine + m_visibleLines);
     }
-#ifdef OPENGL_WIDGET
+#ifdef ENABLE_GPU_RENDERING
     QOpenGLWidget::resizeEvent(event);
 #else
     QWidget::resizeEvent(event);

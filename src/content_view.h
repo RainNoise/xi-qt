@@ -18,8 +18,8 @@
 #include "font.h"
 #include "line_cache.h"
 
-//! TODO: OPENGL
-//#define OPENGL_WIDGET
+//! TODO: OPENGL VSYNC FPS
+// #define ENABLE_GPU_RENDERING
 
 namespace xi {
 
@@ -43,7 +43,7 @@ public:
     void TypeName() { sendEdit(m_selectorToCommand[#TypeName]); }
 
 // Main Content
-#ifdef OPENGL_WIDGET
+#ifdef ENABLE_GPU_RENDERING
 class ContentView : public QOpenGLWidget {
 #else
 class ContentView : public QWidget {
