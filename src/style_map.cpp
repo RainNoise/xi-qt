@@ -57,7 +57,7 @@ void StyleMap::defStyle(const QJsonObject &json) {
 
     auto underline = false;
     auto italic = false;
-    auto weight = 0;
+    auto weight = int(QFont::Normal);
 
     if (json.contains("underline")) {
         underline = json["underline"].toBool();
@@ -66,7 +66,11 @@ void StyleMap::defStyle(const QJsonObject &json) {
         italic = json["italic"].toBool();
     }
     if (json.contains("weight")) {
-        weight = json["weight"].toInt();
+        auto w = json["weight"].toInt();
+        // 0 - 1000 [400]
+        // 0 - 100 [50]
+        weight = w * 0.1 + w % 10;
+        weight = 75;
     }
 
     auto style = std::make_shared<Style>(fgColor, bgColor, underline, italic, weight);

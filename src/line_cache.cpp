@@ -141,6 +141,7 @@ std::vector<std::shared_ptr<xi::Line>> LineCache::getLines(const RangeI &range) 
 }
 
 Line::Line(const QJsonObject &json) {
+    m_assoc = nullptr;
     m_styles = std::make_shared<QVector<StyleSpan>>();
     m_cursor = std::make_shared<QVector<int>>();
 
@@ -165,7 +166,7 @@ Line::Line(const QJsonObject &json) {
 // const Line *line
 Line::Line(std::shared_ptr<Line> line, const QJsonObject &json) {
     if (!line) { return; }
-
+    m_assoc = nullptr;
     m_text = line->m_text;
     if (json.contains("cursor")) {
         m_cursor = std::make_shared<QVector<int>>();
@@ -191,6 +192,7 @@ Line &Line::operator=(const Line &line) {
     m_text = line.m_text;
     m_cursor = line.m_cursor;
     m_styles = line.m_styles;
+    m_assoc = line.m_assoc;
     return *this;
 }
 

@@ -65,6 +65,7 @@ enum class UnderlineStyle {
 using ColorSpan = Span<QColor>;
 using UnderlineSpan = Span<UnderlineStyle>;
 using SimpleSpan = Span<Empty>;
+using FontSpan = Span<FontInfo>;
 
 // Render info, line
 class TextLine {
@@ -110,6 +111,12 @@ public:
         m_defaultFgColor = color;
     }
 
+    void addFontSpan(const RangeI &range, const FontInfo &info) {
+        if (!range.isEmpty()) {
+            m_fontSpans.append(std::make_shared<FontSpan>(range, info));
+        }
+    }
+
     void addFgSpan(const RangeI &range, const QColor &color) {
         if (!range.isEmpty()) {
             m_fgSpans.append(std::make_shared<ColorSpan>(range, color));
@@ -147,6 +154,7 @@ private:
     // TODO: MULTI FONTS
     //QVector<std::shared_ptr<Font>> m_fonts;
 
+    QVector<std::shared_ptr<FontSpan>> m_fontSpans;
     QVector<std::shared_ptr<ColorSpan>> m_fgSpans;
     QVector<std::shared_ptr<ColorSpan>> m_selSpans;
     QVector<std::shared_ptr<SimpleSpan>> m_fakeItalicSpans;

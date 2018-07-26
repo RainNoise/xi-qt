@@ -16,6 +16,7 @@
 namespace xi {
 
 class Line;
+class TextLine;
 
 class Line {
 public:
@@ -37,11 +38,18 @@ public:
     std::shared_ptr<QVector<StyleSpan>> getStyles() {
         return m_styles;
     }
+    void setAssoc(std::shared_ptr<TextLine> assoc) {
+        m_assoc = assoc;
+    }
+    std::shared_ptr<TextLine> assoc() {
+        return m_assoc;
+    }
 
 private:
     QString m_text;
     std::shared_ptr<QVector<int>> m_cursor;
     std::shared_ptr<QVector<StyleSpan>> m_styles;
+    std::shared_ptr<TextLine> m_assoc;
 };
 
 namespace {

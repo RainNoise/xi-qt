@@ -23,7 +23,7 @@ ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_pt
     m_dataSource = std::make_shared<DataSource>();
     {
         QString family = "Inconsolata";
-        int size = 12; // 1920x1080
+        int size = 14; // 1920x1080
         int weight = QFont::Normal; // OpenType weight value
         bool italic = false;
         QFont font(family, size, weight, italic);
@@ -102,8 +102,8 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     // for debug
     //renderer.drawRect(rect());
 
-    // renderer.fillRect(rect(), theme.background());
-    renderer.fillRect(rect(), Qt::black);
+     renderer.fillRect(rect(), theme.background());
+    //renderer.fillRect(rect(), Qt::black);
 
     //m_scrollOrigin.setY(-40);	// down
     //m_scrollOrigin.setY(285);	// up
@@ -138,7 +138,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     // first pass: create TextLine objects and also draw background rects
     for (auto lineIx = first; lineIx <= last; ++lineIx) {
         auto relLineIx = lineIx - first;
-        auto line = lines[relLineIx];
+        auto& line = lines[relLineIx];
         if (!line) {
             textLines.append(nullptr);
             continue;
@@ -149,6 +149,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
         auto textLine = builder->build();
         textLines.append(textLine);
         maxLineWidth = std::max(maxLineWidth, textLine->width());
+        line->setAssoc(textLine);
         //auto y0 = yOff + linespace * lineIx;
         //RangeF yRange(y0, y0 + linespace);
         //Painter::drawLineBg(renderer, textLine, xOff, yRange);
@@ -327,9 +328,12 @@ qreal ContentView::getLineColumnWidth(int line, int column) {
         auto xline = lines[line - first];
 
         if (xline) {
-            auto textline = std::make_shared<TextLine>(xline->getText(), font);
-            auto width = textline->indexTox(column);
-            return width;
+            //auto textline = std::make_shared<TextLine>(xline->getText(), font);
+            auto textline = xline->assoc();
+            if (textline) {
+                auto width = textline->indexTox(column);
+                return width;
+            }
         } else {
             return 0;
         }
@@ -376,11 +380,14 @@ QPair<int, int> ContentView::posToLineColumn(const QPoint &pos) {
 
     if (!line) return result;
 
-    auto textline = std::make_shared<TextLine>(line->getText(), font);
-    auto column = textline->xToIndex(pos.x() - m_padding.left() - m_dataSource->gutterWidth);
+    // auto textline = std::make_shared<TextLine>(line->getText(), font);
+    auto textline = line->assoc();
+    if (textline) {
+        auto column = textline->xToIndex(pos.x() - m_padding.left() - m_dataSource->gutterWidth);
 
-    result.first = lineNum;
-    result.second = column;
+        result.first = lineNum;
+        result.second = column;
+    }
 
     return result;
 }

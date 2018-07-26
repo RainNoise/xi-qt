@@ -12,44 +12,44 @@ TextLine::TextLine(const QString &text, const std::shared_ptr<Font> &font) {
 }
 
 int TextLine::xToIndex(qreal x) {
-    QString text = m_text;
-    auto width = 0.f;
-    auto idx = -1;
-    for (auto i = 0; i < text.size(); ++i) {
-        width = m_fontMetrics->width(text.mid(0, i));
-        if (width >= x - m_fontMetrics->averageCharWidth() / 2) {
-            idx = i;
-            break;
-        }
-    }
-    if (idx == 0) return 0;
-    if (idx == -1) return m_text.toUtf8().length();
+    //QString text = m_text;
+    //auto width = 0.f;
+    //auto idx = -1;
+    //for (auto i = 0; i < text.size(); ++i) {
+    //    width = m_fontMetrics->width(text.mid(0, i));
+    //    if (width >= x - m_fontMetrics->averageCharWidth() / 2) {
+    //        idx = i;
+    //        break;
+    //    }
+    //}
+    //if (idx == 0) return 0;
+    //if (idx == -1) return m_text.toUtf8().length();
 
-    auto utf8Ix = text.mid(0, idx).toUtf8().length();
-    return utf8Ix;
+    //auto utf8Ix = text.mid(0, idx).toUtf8().length();
+    //return utf8Ix;
 
     // TODO: IMPROVE
-    //if (m_layout->lineCount() > 0) {
-    //    auto innerLine = m_layout->lineAt(0);
-    //    auto idx = innerLine.xToCursor(x);
-    //    auto utf8Ix = m_text.mid(0, idx).toUtf8().length();
-    //    return utf8Ix;
-    //}
-    //return 0;
+    if (m_layout->lineCount() > 0) {
+        auto innerLine = m_layout->lineAt(0);
+        auto idx = innerLine.xToCursor(x);
+        auto utf8Ix = m_text.mid(0, idx).toUtf8().length();
+        return utf8Ix;
+    }
+    return 0;
 }
 
 qreal TextLine::indexTox(int ix) {
-    if (ix < 0 || ix > m_text.size()) { return 0; }
-    return m_fontMetrics->width(m_text.toUtf8().left(ix));
+    //if (ix < 0 || ix > m_text.size()) { return 0; }
+    //return m_fontMetrics->width(m_text.toUtf8().left(ix));
 
     // TODO: IMPROVE
-    //if (m_layout->lineCount() > 0) {
-    //    auto innerLine = m_layout->lineAt(0);
-    //    auto utf8ix = m_text.toUtf8().mid(0, ix).length();
-    //    auto x = innerLine.cursorToX(utf8ix);
-    //    return x;
-    //}
-    //return 0;
+    if (m_layout->lineCount() > 0) {
+        auto innerLine = m_layout->lineAt(0);
+        auto utf8ix = m_text.toUtf8().mid(0, ix).length();
+        auto x = innerLine.cursorToX(utf8ix);
+        return x;
+    }
+    return 0;
 }
 
 std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
@@ -58,11 +58,22 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
     int leading = textline->metrics()->leading();
     auto lineWidth = textline->metrics()->width(m_text); // slow
 
-    qreal height = 0;
-    foreach(std::shared_ptr<ColorSpan> span, m_fgSpans) {
+    foreach (std::shared_ptr<FontSpan> span, m_fontSpans) {
         QTextLayout::FormatRange fmt;
         QTextCharFormat cfmt;
         cfmt.setFont(m_font->getFont());
+        cfmt.setFontItalic(span->payload.italic);
+        cfmt.setFontWeight(span->payload.weight);
+        fmt.start = span->range.start();
+        fmt.length = span->range.length();
+        fmt.format = cfmt;
+        m_overrides.push_back(fmt);
+    }
+    
+    foreach(std::shared_ptr<ColorSpan> span, m_fgSpans) {
+        QTextLayout::FormatRange fmt;
+        QTextCharFormat cfmt;
+        //cfmt.setFont(m_font->getFont());
         if (span->payload.isValid()) {
             cfmt.setForeground(span->payload);
         }
@@ -75,7 +86,7 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
     foreach (std::shared_ptr<ColorSpan> span, m_selSpans) {
         QTextLayout::FormatRange fmt;
         QTextCharFormat cfmt;
-        cfmt.setFont(m_font->getFont());
+        //cfmt.setFont(m_font->getFont());
         cfmt.setBackground(span->payload);
         fmt.start = span->range.start();
         fmt.length = span->range.length();
@@ -95,6 +106,7 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
     //    m_overrides.push_back(fmt);
     //}
 
+    qreal height = 0;
     textline->layout()->setFormats(m_overrides);
     textline->layout()->setCacheEnabled(true);
     textline->layout()->beginLayout();
@@ -102,7 +114,7 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
         QTextLine qline = textline->layout()->createLine();
         if (!qline.isValid())
             break;
-        qline.setLineWidth(lineWidth);
+        qline.setLineWidth(lineWidth*2);
         height += leading;
         qline.setPosition(QPointF(0, height));
         height += qline.height();

@@ -47,6 +47,8 @@ public:
             //if (style->m_font) {
             //    // ?
             //}
+            builder->addFontSpan(range, style->m_info);
+
             if (style->m_fakeItalic) {
                 builder->addFakeItalicSpan(range);
             }
