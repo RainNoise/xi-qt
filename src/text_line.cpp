@@ -6,8 +6,6 @@ namespace xi {
 TextLine::TextLine(const QString &text, const std::shared_ptr<Font> &font) {
     m_text = text;
     m_font = font;
-    //m_cursor = line.m_cursor;
-    //m_styles = line.m_styles;
     m_fontMetrics = std::make_unique<QFontMetricsF>(font->getFont());
     m_layout = std::make_shared<QTextLayout>(text, font->getFont());
     m_selRanges = std::make_shared<QVector<SelRange>>();
@@ -55,22 +53,49 @@ qreal TextLine::indexTox(int ix) {
 }
 
 std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
-    auto theme = Perference::shared()->theme();
+    //auto theme = Perference::shared()->theme();
     auto textline = std::make_shared<TextLine>(m_text, m_font);
     int leading = textline->metrics()->leading();
     auto lineWidth = textline->metrics()->width(m_text); // slow
 
     qreal height = 0;
-    QVector<QTextLayout::FormatRange> overrides;
-    QTextLayout::FormatRange fmt;
-    QTextCharFormat cfmt;
-    cfmt.setFont(m_font->getFont());
-    cfmt.setForeground(QBrush(theme.foreground())); // 255, 215, 0 // 255, 128, 0 // 189, 183, 107 // 248, 248, 186 // Qt::black
-    fmt.start = 0;
-    fmt.length = m_text.length();
-    fmt.format = cfmt;
-    overrides.push_back(fmt);
-    textline->layout()->setFormats(overrides);
+    foreach(std::shared_ptr<ColorSpan> span, m_fgSpans) {
+        QTextLayout::FormatRange fmt;
+        QTextCharFormat cfmt;
+        cfmt.setFont(m_font->getFont());
+        if (span->payload.isValid()) {
+            cfmt.setForeground(span->payload);
+        }
+        fmt.start = span->range.start();
+        fmt.length = span->range.length();
+        fmt.format = cfmt;
+        m_overrides.push_back(fmt);
+    }
+
+    foreach (std::shared_ptr<ColorSpan> span, m_selSpans) {
+        QTextLayout::FormatRange fmt;
+        QTextCharFormat cfmt;
+        cfmt.setFont(m_font->getFont());
+        cfmt.setBackground(span->payload);
+        fmt.start = span->range.start();
+        fmt.length = span->range.length();
+        fmt.format = cfmt;
+        m_overrides.push_back(fmt);
+    }
+
+    //foreach (std::shared_ptr<UnderlineSpan> span, m_underlineSpans) {
+    //    QTextLayout::FormatRange fmt;
+    //    QTextCharFormat cfmt;
+    //    cfmt.setFont(m_font->getFont());
+    //    cfmt.setFontUnderline(true);
+    //    cfmt.setUnderlineStyle(QTextCharFormat::SingleUnderline);
+    //    fmt.start = span->range.start();
+    //    fmt.length = span->range.length();
+    //    fmt.format = cfmt;
+    //    m_overrides.push_back(fmt);
+    //}
+
+    textline->layout()->setFormats(m_overrides);
     textline->layout()->setCacheEnabled(true);
     textline->layout()->beginLayout();
     while (1) {

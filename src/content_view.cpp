@@ -23,8 +23,8 @@ ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_pt
     m_dataSource = std::make_shared<DataSource>();
     {
         QString family = "Inconsolata";
-        int size = 14; // 1920x1080
-        int weight = 0;
+        int size = 12; // 1920x1080
+        int weight = QFont::Normal; // OpenType weight value
         bool italic = false;
         QFont font(family, size, weight, italic);
         font.setStyleHint(QFont::TypeWriter, QFont::StyleStrategy(QFont::PreferDefault | QFont::ForceIntegerMetrics));
@@ -102,7 +102,8 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     // for debug
     //renderer.drawRect(rect());
 
-    renderer.fillRect(rect(), theme.background());
+    // renderer.fillRect(rect(), theme.background());
+    renderer.fillRect(rect(), Qt::black);
 
     //m_scrollOrigin.setY(-40);	// down
     //m_scrollOrigin.setY(285);	// up
@@ -148,16 +149,16 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
         auto textLine = builder->build();
         textLines.append(textLine);
         maxLineWidth = std::max(maxLineWidth, textLine->width());
-        auto y0 = yOff + linespace * lineIx;
-        RangeF yRange(y0, y0 + linespace);
-        Painter::drawLineBg(renderer, textLine, xOff, yRange);
+        //auto y0 = yOff + linespace * lineIx;
+        //RangeF yRange(y0, y0 + linespace);
+        //Painter::drawLineBg(renderer, textLine, xOff, yRange);
     }
 
     if (maxLineWidth != m_maxLineWidth) {
         m_maxLineWidth = maxLineWidth;
     }
 
-    // second pass: draw text
+    // second pass: draw text & sel background
     for (auto lineIx = first; lineIx <= last; ++lineIx) {
         auto textLine = textLines[lineIx - first];
         if (textLine) {
@@ -549,20 +550,26 @@ void ContentView::mousePressEvent(QMouseEvent *e) {
     auto lc = posToLineColumn(e->pos());
     auto line = lc.first, column = lc.second;
     m_connection->sendGesture(m_file->viewId(), line, column, "point_select");
-
+    m_drag = true;
     QWidget::mousePressEvent(e);
 }
 
 void ContentView::mouseMoveEvent(QMouseEvent *e) {
-    setFocus();
-    //auto lc = posToLineColumn(e->pos());
-    //auto line = lc.first, column = lc.second;
-    //m_connection->sendGesture(m_file->viewId(), line, column, "point_select");
+    if (m_drag) {
+        setFocus();
+        auto lc = posToLineColumn(e->pos());
+        auto line = lc.first, column = lc.second;
+        m_connection->sendDrag(m_file->viewId(), line, column, 0);
+        // TODO:
+        // if line == first || line == last
+        // need auto scroll
+    }
     QWidget::mouseMoveEvent(e);
 }
 
 void ContentView::mouseReleaseEvent(QMouseEvent *e) {
     setFocus();
+    m_drag = false;
     //auto lc = posToLineColumn(e->pos());
     //auto line = lc.first, column = lc.second;
     QWidget::mouseReleaseEvent(e);
@@ -612,7 +619,7 @@ void ContentView::paste() {
         auto text = mimeData->text();
         m_connection->sendInsert(m_file->viewId(), text);
     } else {
-        qDebug() << "unknown clipboard data";
+        qWarning() << "unknown clipboard data";
     }
 }
 

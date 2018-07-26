@@ -1,10 +1,16 @@
 #include "style_map.h"
 
 #include <QJsonArray>
+#include <QFontMetricsF>
 
 #include "perference.h"
 
 namespace xi {
+
+int utf8OffsetToUtf16(const QString &text, int ix) {
+    QString utf16 = text.toUtf8().left(ix);
+    return utf16.length();
+}
 
 std::shared_ptr<QVector<StyleSpan>> StyleSpan::styles(const QJsonArray &json, const QString &text) {
     auto vss = std::make_shared<QVector<StyleSpan>>();
@@ -12,8 +18,14 @@ std::shared_ptr<QVector<StyleSpan>> StyleSpan::styles(const QJsonArray &json, co
     for (auto i = 0; i < json.size(); i += 3) {
         auto start = ix + json.at(i).toInt();
         auto end = start + json.at(i + 1).toInt();
-        auto style = start + json.at(i + 2).toInt();
-        vss->append(StyleSpan(style, RangeI(start, end - start)));
+        auto style = json.at(i + 2).toInt();       
+        auto startIx = utf8OffsetToUtf16(text, start);
+        auto endIx = utf8OffsetToUtf16(text, end);
+        if (startIx < 0 || endIx < startIx) {
+            qWarning() << "malformed style array for line: " << text << json;
+        } else {
+            vss->append(StyleSpan(style, RangeI(startIx, endIx))); //
+        }
         ix = end;
     }
     return vss;
@@ -57,7 +69,7 @@ void StyleMap::defStyle(const QJsonObject &json) {
         weight = json["weight"].toInt();
     }
 
-    auto style = std::make_shared<Style>();
+    auto style = std::make_shared<Style>(fgColor, bgColor, underline, italic, weight);
 
     while (m_styles.count() < styleId) {
         m_styles.append(nullptr);

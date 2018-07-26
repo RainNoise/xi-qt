@@ -233,7 +233,7 @@ void CoreConnection::sendFindPrevious(const QString &viewId, bool wrapAround) {
 // readAllStandardOutput
 // "Usage of click is deprecated; use do_gesture\n"
 void CoreConnection::stdoutReceivedHandler() {
-    qDebug() << "stdoutReceivedHandler";
+    qDebug() << "core--->stdoutReceivedHandler";
 
     if (m_process->canReadLine()) {
         auto &buf = m_recvBuf->buffer();
@@ -264,6 +264,11 @@ void CoreConnection::stdoutReceivedHandler() {
         auto list = buf.split('\n');
         list.removeLast(); //empty
 
+        // loaded 
+        if (list.isEmpty()) {
+            return;
+        }
+
         if (buf.at(buf.size() - 1) != '\n') {
             buf = list.last();
             list.removeLast(); //?
@@ -283,7 +288,7 @@ void CoreConnection::handleRaw(const QByteArray &bytes) {
     auto doc = QJsonDocument::fromJson(bytes);
     if (doc.isNull()) {
         // "loaded xi-syntect-plugin\n"
-        qWarning("malformed json %s", bytes);
+        qWarning() << "malformed json " << bytes;
         return;
     }
     auto json = doc.object();
@@ -399,7 +404,7 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
 }
 
 void CoreConnection::sendJson(const QJsonObject &json) {
-    qDebug() << "sendJson";
+    qDebug() << "sendJson--->core";
     qDebug() << json;
 
     //m_queue->bounded_push(json);

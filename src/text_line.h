@@ -138,9 +138,15 @@ public:
     std::shared_ptr<TextLine> build();
 
 private:
+    QVector<QTextLayout::FormatRange> m_overrides;
+    
     std::shared_ptr<Font> m_font;
     QString m_text;
     QColor m_defaultFgColor;
+
+    // TODO: MULTI FONTS
+    //QVector<std::shared_ptr<Font>> m_fonts;
+
     QVector<std::shared_ptr<ColorSpan>> m_fgSpans;
     QVector<std::shared_ptr<ColorSpan>> m_selSpans;
     QVector<std::shared_ptr<SimpleSpan>> m_fakeItalicSpans;

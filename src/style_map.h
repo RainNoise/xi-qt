@@ -20,8 +20,11 @@ QColor colorFromArgb(quint32 argb);
 
 class StyleMap {
 public:
+    //StyleMap(const std::shared_ptr<Font> &font) {
+    //    m_font = font;
+    //}
     StyleMap() {
-
+        //m_font = font;
     }
 
     void defStyle(const QJsonObject& json);
@@ -32,7 +35,25 @@ public:
             qWarning() << "stylemap can't resolve" << id;
             return;
         }
+        if (id == 0 || id == 1) {
+            builder->addSelSpan(range, selColor);
+        } else {
+            auto style = m_styles[id];
+            if (!style) return;
 
+            if (style->m_fgColor.isValid()) {
+                builder->addFgSpan(range, style->m_fgColor);
+            }
+            //if (style->m_font) {
+            //    // ?
+            //}
+            if (style->m_fakeItalic) {
+                builder->addFakeItalicSpan(range);
+            }
+            if (style->m_underline) {
+                builder->addUnderlineSpan(range, UnderlineStyle::single);
+            }
+        }        
     }
 
     void applyStyles(const std::shared_ptr<TextLineBuilder> &builder,
@@ -56,8 +77,16 @@ public:
         }
     }
 
+    StyleMap &operator=(const StyleMap &styleMap) {
+        if (this != &styleMap) {
+            m_styles = styleMap.m_styles;
+        }
+        return *this;
+    }
+
 private:
     QVector<std::shared_ptr<Style>> m_styles;
+    //std::shared_ptr<Font> m_font;
 };
 
 } // namespace xi

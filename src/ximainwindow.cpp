@@ -11,7 +11,7 @@ namespace xi {
 
 static const char *XI_CONFIG_DIR = "XI_CONFIG_DIR";
 static const char *XI_PLUGINS = "plugins";
-static const char *XI_THEME = "InspiredGitHub";
+static const char *XI_THEME = "base16-eighties.dark"; // "base16-eighties.dark" // "InspiredGitHub"
 
 XiMainWindow::XiMainWindow(QWidget *parent) : QMainWindow(parent) {
     setupUI();

@@ -8,6 +8,7 @@
 #include <QMargins>
 #include <QPoint>
 #include <QScrollArea>
+#include <QTimer>
 
 #include <memory>
 
@@ -156,6 +157,8 @@ private:
     qreal m_maxLineWidth;
     QHash<QString, QString> m_selectorToCommand;
     QMarginsF m_padding;
+    bool m_drag = false;
+    QTimer m_doubleCheckTimer;
 };
 } // namespace xi
 

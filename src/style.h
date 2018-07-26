@@ -16,11 +16,19 @@ class Style {
     friend class StyleMap;
 
 public:
-    Style() {
+    //Style(const std::shared_ptr<Font> &font, const QColor &fgColor, 
+    //    const QColor &bgColor, bool underline, bool italic, int weight) : 
+    //    m_font(font), m_fgColor(fgColor), m_bgColor(bgColor), m_underline(underline),
+    //    m_italic(italic), m_weight(weight) {
+    //}
+    Style(const QColor &fgColor,
+          const QColor &bgColor, bool underline, bool italic, int weight) : 
+        m_fgColor(fgColor), m_bgColor(bgColor), m_underline(underline),                                                                            
+        m_italic(italic), m_weight(weight) {
     }
 
 private:
-    Font m_font;
+    // std::shared_ptr<Font> m_font;
     QColor m_fgColor;
     QColor m_bgColor;
     bool m_underline;
