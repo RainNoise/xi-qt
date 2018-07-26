@@ -14,12 +14,57 @@
 #include "range.h"
 #include "style_span.h"
 
+//! TODO: OPENGL
+
 namespace xi {
 
 struct SelRange {
     QColor color;
     RangeI range;
 };
+
+struct BackgroundColorRange {
+    RangeF range;
+    QColor color;
+};
+
+struct UnderlineRange {
+    RangeF range;
+    RangeF y;
+    QColor color;
+};
+
+template <typename T>
+struct Span {
+    Span(const RangeI &range, const T &payload) : range(range), payload(payload) {
+        //this->range = range;
+        //this->payload = payload;
+    }
+    Span(const Span<T> &span) {
+        *this = span;
+    }
+    Span &operator=(const Span<T> &span) {
+        if (this != &span) {
+            range = span.range;
+            payload = span.payload;
+        }
+        return *this;
+    }
+    RangeI range;
+    T payload;
+};
+
+struct Empty {
+};
+
+enum class UnderlineStyle {
+    single,
+    thick
+};
+
+using ColorSpan = Span<QColor>;
+using UnderlineSpan = Span<UnderlineStyle>;
+using SimpleSpan = Span<Empty>;
 
 // Render info, line
 class TextLine {
@@ -62,7 +107,31 @@ public:
     }
 
     void setFgColor(const QColor &color) {
-        m_fgColor = color;
+        m_defaultFgColor = color;
+    }
+
+    void addFgSpan(const RangeI &range, const QColor &color) {
+        if (!range.isEmpty()) {
+            m_fgSpans.append(std::make_shared<ColorSpan>(range, color));
+        }
+    }
+
+    void addSelSpan(const RangeI &range, const QColor &color) {
+        if (!range.isEmpty()) {
+            m_selSpans.append(std::make_shared<ColorSpan>(range, color));
+        }
+    }
+
+    void addFakeItalicSpan(const RangeI &range) {
+        if (!range.isEmpty()) {            
+            m_fakeItalicSpans.append(std::make_shared<SimpleSpan>(range, Empty()));
+        }
+    }
+
+    void addUnderlineSpan(const RangeI &range, UnderlineStyle style) {
+        if (!range.isEmpty()) {
+            m_underlineSpans.append(std::make_shared<UnderlineSpan>(range, style));
+        }
     }
 
     // init QTextLayout
@@ -71,7 +140,11 @@ public:
 private:
     std::shared_ptr<Font> m_font;
     QString m_text;
-    QColor m_fgColor;
+    QColor m_defaultFgColor;
+    QVector<std::shared_ptr<ColorSpan>> m_fgSpans;
+    QVector<std::shared_ptr<ColorSpan>> m_selSpans;
+    QVector<std::shared_ptr<SimpleSpan>> m_fakeItalicSpans;
+    QVector<std::shared_ptr<UnderlineSpan>> m_underlineSpans;
 };
 
 class Painter {

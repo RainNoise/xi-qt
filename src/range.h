@@ -22,6 +22,9 @@ public:
     inline T size() const {
         return m_pair.second - m_pair.first;
     }
+    inline bool isEmpty() const {
+        return m_pair.second == m_pair.first;
+    }
 
 private:
     QPair<T, T> m_pair;

@@ -282,8 +282,9 @@ void CoreConnection::stdoutReceivedHandler() {
 void CoreConnection::handleRaw(const QByteArray &bytes) {
     auto doc = QJsonDocument::fromJson(bytes);
     if (doc.isNull()) {
+        // "loaded xi-syntect-plugin\n"
+        qWarning("malformed json %s", bytes);
         return;
-        // qFatal("malformed json %s", bytes);
     }
     auto json = doc.object();
     handleRpc(json);

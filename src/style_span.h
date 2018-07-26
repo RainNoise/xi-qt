@@ -23,6 +23,13 @@ public:
 
     static std::shared_ptr<QVector<StyleSpan>> styles(const QJsonArray &object, const QString &text);
 
+    StyleIdentifier style() const {
+        return m_style;
+    }
+    RangeI range() const {
+        return m_range;
+    }
+
 private:
     StyleIdentifier m_style;
     RangeI m_range;

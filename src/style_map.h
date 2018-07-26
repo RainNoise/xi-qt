@@ -27,15 +27,33 @@ public:
     void defStyle(const QJsonObject& json);
 
     void applyStyle(const std::shared_ptr<TextLineBuilder> &builder, int id, const RangeI &range, const QColor &selColor) {
+        // BUG: m_styles is NULL;
         if (id > m_styles.count()) {
             qWarning() << "stylemap can't resolve" << id;
             return;
         }
+
     }
 
     void applyStyles(const std::shared_ptr<TextLineBuilder> &builder,
                      std::shared_ptr<QVector<StyleSpan>> styles,
                      const QColor &selColor, const QColor &highlightColor) {
+        foreach(StyleSpan ss, *styles) {
+            QColor color;
+            auto id = ss.style();
+            switch (id) {
+            case 0:
+                color = selColor;
+                break;
+            case 1:
+                color = highlightColor;
+                break;
+            default:
+                color = QColor(QColor::Invalid);
+                break;
+            }
+            applyStyle(builder, id, ss.range(), color);
+        }
     }
 
 private:

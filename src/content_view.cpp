@@ -127,7 +127,8 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     auto lines = lineCache->getLines(RangeI(first, last + 1)); // fix
 
     auto font = m_dataSource->defaultFont;
-    auto styleMap = m_dataSource->styleMap;
+    //auto styleMap = m_dataSource->styleMap;
+    auto styleMap = Perference::shared()->styleMap();
     QVector<std::shared_ptr<TextLine>> textLines;
 
     m_firstLine = first;
@@ -143,7 +144,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
         }
         auto builder = std::make_shared<TextLineBuilder>(line->getText(), font);
         builder->setFgColor(theme.foreground());
-        styleMap->applyStyles(builder, line->getStyles(), theme.selection(), theme.highlight());
+        styleMap.applyStyles(builder, line->getStyles(), theme.selection(), theme.highlight());
         auto textLine = builder->build();
         textLines.append(textLine);
         maxLineWidth = std::max(maxLineWidth, textLine->width());
