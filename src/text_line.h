@@ -78,7 +78,8 @@ public:
     qreal indexTox(int ix);
 
     qreal width() const {
-        return metrics()->width(m_text);
+        return m_width;
+        // return metrics()->width(m_text);
     }
     std::shared_ptr<QTextLayout> layout() const {
         return m_layout;
@@ -93,6 +94,7 @@ public:
 protected:
     std::shared_ptr<Font> m_font;
     QString m_text;
+    qreal m_width;
 
     std::shared_ptr<QVector<StyleSpan>> m_styles;
     std::shared_ptr<QFontMetricsF> m_fontMetrics;

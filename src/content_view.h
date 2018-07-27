@@ -41,6 +41,44 @@ public:
     qreal gutterWidth;
 };
 
+class LineColumn {
+public:
+    static LineColumn invalid() {
+        return LineColumn(false);
+    }
+
+    LineColumn(bool valid = true) {
+        setValid(valid);
+    }
+    LineColumn(int line, int column) {
+        lc.first = line;
+        lc.second = column;
+        setValid(true);
+    }
+    bool isValid() {
+        return valid;
+    }
+    void setValid(bool valid) {
+        this->valid = valid;
+    }
+    int line() {
+        return lc.first;
+    }
+    void line(int line) {
+        lc.first = line;
+    }
+    int column() {
+        return lc.second;
+    }
+    void column(int column) {
+        lc.second = column;
+    }
+
+private:
+    bool valid;
+    QPair<int, int> lc;
+};
+
 #define SEND_EDIT_METHOD(TypeName) \
     void TypeName() { sendEdit(m_selectorToCommand[#TypeName]); }
 
@@ -85,8 +123,8 @@ public:
     int checkLineVisible(int line);
     qreal getLineColumnWidth(int line, int column);
     int checkLineColumnPosition(int line, int column);
-    QPair<int, int> posToLineColumn(const QPoint &pos);
-    QPair<int, int> getFirstLastVisibleLines(const QRect &bound);
+    LineColumn posToLineColumn(const QPoint &pos);
+    ClosedRangeI getFirstLastVisibleLines(const QRect &bound);
 
     void scrollY(int y);
     void scrollX(int x);

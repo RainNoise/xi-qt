@@ -20,6 +20,7 @@
 #include <QVector>
 
 //#include "boost/lockfree/queue.hpp"
+//#include "boost/lockfree/spsc_queue.hpp"
 
 #include "theme.h"
 
@@ -27,32 +28,23 @@ namespace xi {
 
 class ResponseHandler {
 public:
-    using CallbackType = std::function<void(const QJsonObject &)>;
-    enum Type {
-        Callback,
-        Emit,
-    };
-
-    explicit ResponseHandler(CallbackType callback = nullptr);
-    explicit ResponseHandler(const QJsonObject &data);
+    using Callback = std::function<void(const QJsonObject &)>;
+    explicit ResponseHandler(Callback callback = nullptr);
     ResponseHandler(const ResponseHandler &handler);
 
     void invoke(const QJsonObject &json);
     ResponseHandler &operator=(const ResponseHandler &handler);
-    Type type() const;
-    void type(Type type);
-    void setEmitData(const QJsonObject &data);
-    QJsonObject getEmitData() const;
 
 private:
-    CallbackType m_callback;
-    Type m_type;
-    QJsonObject m_emitData;
+    Callback m_callback;
 };
 
-class CoreConnection : public QObject {
+class CoreConnection : public QObject {   
     Q_OBJECT
 public:
+    //using CoreQueue = boost::lockfree::spsc_queue<QJsonObject, boost::lockfree::capacity<1024>>;
+    //using CoreQueue = boost::lockfree::spsc_queue<QJsonObject, boost::lockfree::capacity<1024>>;
+
     explicit CoreConnection(QObject *parent = nullptr);
     ~CoreConnection();
     void init();
@@ -141,51 +133,119 @@ public slots:
 
 private:
     std::shared_ptr<QProcess> m_process;
+    QMutex m_proMutex;
+
     //std::shared_ptr<boost::lockfree::queue<QJsonObject>> m_queue;
+    //std::shared_ptr<boost::lockfree::spsc_queue<QJsonObject, boost::lockfree::capacity<1024>>> m_queue;
+    //std::shared_ptr<CoreQueue> m_queue;
     QHash<qint64, ResponseHandler> m_pending;
     qint64 m_rpcIndex;
     std::shared_ptr<QBuffer> m_recvBuf;
+    QThread *m_readThread;
+};
+
+class ReadCoreStdoutObject : public QObject {
+    Q_OBJECT
+public:
+    ReadCoreStdoutObject(const std::shared_ptr<QProcess> &process, CoreConnection *connection) {
+        setObjectName("ReadCoreStdoutObject");
+        m_process = process;
+        m_connection = connection;
+        // connect(m_process.get(), &QProcess::readyReadStandardOutput, m_connection, &CoreConnection::stdoutReceivedHandler);
+        //AutoConnection,
+        //    DirectConnection,
+        //    QueuedConnection,
+        //    BlockingQueuedConnection,
+        //    UniqueConnection = 0x80
+        //connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &ReadCoreStdoutThread::stdoutReceivedHandler, Qt::UniqueConnection);
+    }
+    //void run();
+
+signals:
+    //void resultReady(QByteArray);
+
+public slots:
+    void stdoutReceivedHandler();
+
+private:
+    //std::shared_ptr<CoreConnection> m_connection;
+    CoreConnection *m_connection;
+    std::shared_ptr<QProcess> m_process;
+    //QBuffer m_readBuffer;
 };
 
 class ReadCoreStdoutThread : public QThread {
     Q_OBJECT
 public:
-    ReadCoreStdoutThread(const std::shared_ptr<QProcess> &process) {
+    ReadCoreStdoutThread(const std::shared_ptr<QProcess> &process, CoreConnection *connection) {
         setObjectName("ReadCoreStdoutThread");
         m_process = process;
-        // connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &CoreConnection::stdoutReceivedHandler);
+        m_connection = connection;
+        // connect(m_process.get(), &QProcess::readyReadStandardOutput, m_connection, &CoreConnection::stdoutReceivedHandler);
+        //AutoConnection,
+        //    DirectConnection,
+        //    QueuedConnection,
+        //    BlockingQueuedConnection,
+        //    UniqueConnection = 0x80
+        //readyReadStandardOutput
+        connect(m_process.get(), &QProcess::readyRead, this, &ReadCoreStdoutThread::stdoutReceivedHandler, Qt::QueuedConnection);
     }
     void run() override;
 
 signals:
-    void resultReady(QByteArray);
+    //void resultReady(QByteArray);
+
+public slots:
+    void stdoutReceivedHandler();
+
+private:
+    //std::shared_ptr<CoreConnection> m_connection;
+    CoreConnection *m_connection;
+    std::shared_ptr<QProcess> m_process;
+    bool m_msg = false;
+    //QBuffer m_readBuffer;
+};
+
+class WriteCoreStdinThread : public QThread {
+    Q_OBJECT
+public:
+    //WriteCoreStdinThread(const std::shared_ptr<QProcess> &process, const std::shared_ptr<CoreConnection::CoreQueue> &queue) {
+    //    setObjectName("WriteCoreStdinThread");
+    //    m_process = process;
+    //    m_queue = queue;
+    //}
+    void run() override;
+
+signals:
+    //void resultReady(QByteArray);
 
 public slots:
 
 private:
     std::shared_ptr<QProcess> m_process;
-    QBuffer m_readBuffer;
+    //std::shared_ptr<CoreConnection::CoreQueue> m_queue;
 };
 
 //class WriteCoreStdinThread : public QThread {
-//	Q_OBJECT
+//    Q_OBJECT
 //public:
-//	WriteCoreStdinThread(
-//		const std::shared_ptr<QProcess> &core,
-//		const std::shared_ptr<boost::lockfree::queue<QJsonObject>> &queue) {
-//		m_core = core;
-//		m_queue = queue;
-//	}
-//	void run() override;
+//    WriteCoreStdinThread(CoreConnection* coreConnection) {
+//        setObjectName("WriteCoreStdinThread");
+//        m_coreConnection = coreConnection;
+//        //m_process = core;
+//        //m_queue = queue;
+//    }
+//    void run() override;
 //
 //signals:
-//	void resultReady(QByteArray);
+//    //void resultReady(QByteArray);
 //
 //public slots:
 //
 //private:
-//	std::shared_ptr<QProcess> m_core;
-//	std::shared_ptr<boost::lockfree::queue<QJsonObject>> m_queue;
+//    CoreConnection *m_coreConnection;
+//    //std::shared_ptr<QProcess> m_process;
+//    //std::shared_ptr<CoreConnection::CoreQueueType> m_queue;
 //};
 
 } // namespace xi

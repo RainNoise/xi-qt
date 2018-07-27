@@ -33,10 +33,23 @@ void EditWindow::openFile(const QString &viewId, const QString &filePath) {
         view->focusOnEdit();
         return;
     }
-    QJsonObject json;
-    json["method"] = "NewViewId";
-    json["value"] = filePath;
-    ResponseHandler handler(json);
+    ResponseHandler handler([=](const QJsonObject &result) {
+        qDebug() << "sendNewView ResponseHandler";
+        auto file = std::make_shared<File>();
+        auto newViewId = result["result"].toString();
+        file->setPath(filePath);
+        file->setViewId(newViewId);
+        EditView *view = new EditView(file, this->m_connection, this);
+        auto newIdx = this->appendViewTab(file, view);
+        if (newIdx == -1) {
+            qDebug() << "insert tab failed";
+            delete view;
+        } else {
+            this->m_router[newViewId] = view;
+            setCurrentIndex(newIdx);
+            view->focusOnEdit();
+        }
+    });
     m_connection->sendNewView(filePath, handler);
 }
 

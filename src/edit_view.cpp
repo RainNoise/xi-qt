@@ -116,9 +116,10 @@ void EditView::relayoutScrollBar() {
     m_scrollBarH->setRange(0, maxLineWidth);
     m_scrollBarH->setSingleStep(maxCharWidth);
     m_scrollBarH->setPageStep(widgetWidth);
-    auto visible = (maxLineWidth + xOff + maxCharWidth / 2.f > widgetWidth);
-    if (!visible && m_content->getScrollOrigin().x() != 0) visible = true;
-    m_scrollBarH->setVisible(visible);
+    //auto visible = (maxLineWidth + xOff + maxCharWidth / 2.f > widgetWidth);
+    //if (!visible && m_content->getScrollOrigin().x() != 0) visible = true;
+    //m_scrollBarH->setVisible(visible);
+    m_scrollBarH->setVisible(true);
 }
 
 void EditView::wheelEvent(QWheelEvent *event) {

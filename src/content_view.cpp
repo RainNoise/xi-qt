@@ -27,7 +27,7 @@ QWidget(parent) {
     m_dataSource = std::make_shared<DataSource>();
     {
         QString family = "Inconsolata";
-        int size = 14; // 1920x1080
+        int size = 12; // 1920x1080
         int weight = QFont::Normal; // OpenType weight value
         bool italic = false;
         QFont font(family, size, weight, italic);
@@ -106,7 +106,7 @@ void ContentView::sendEdit(const QString &method) {
     }
 }
 
-QPair<int, int> ContentView::getFirstLastVisibleLines(const QRect &bound) {
+ClosedRangeI ContentView::getFirstLastVisibleLines(const QRect &bound) {
     auto linespace = m_dataSource->fontMetrics->height();
     auto topPad = linespace - m_dataSource->fontMetrics->ascent();
     auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
@@ -115,7 +115,7 @@ QPair<int, int> ContentView::getFirstLastVisibleLines(const QRect &bound) {
     auto firstVisible = qMax(0, (int)(std::ceil((bound.y() - topPad + m_scrollOrigin.y()) / linespace)));
     auto lastVisible = qMax(0, (int)(std::floor((bound.y() + bound.height() - topPad + m_scrollOrigin.y()) / linespace)));
 
-    QPair<int, int> vlines(firstVisible, lastVisible);
+    ClosedRangeI vlines(firstVisible, lastVisible);
     return vlines;
 }
 
@@ -126,8 +126,8 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     // for debug
     //renderer.drawRect(rect());
 
-     renderer.fillRect(rect(), theme.background());
-    //renderer.fillRect(rect(), Qt::black);
+     //renderer.fillRect(rect(), theme.background());
+    renderer.fillRect(rect(), Qt::black);
 
     //m_scrollOrigin.setY(-40);	// down
     //m_scrollOrigin.setY(285);	// up
@@ -176,12 +176,12 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
             styleMap.applyStyles(builder, line->getStyles(), theme.selection(), theme.highlight());
             textLine = builder->build();
             textLines.append(textLine);
-            maxLineWidth = std::max(maxLineWidth, textLine->width());
             line->setAssoc(textLine);
             //auto y0 = yOff + linespace * lineIx;
             //RangeF yRange(y0, y0 + linespace);
             //Painter::drawLineBg(renderer, textLine, xOff, yRange);        
         }
+        maxLineWidth = std::max(maxLineWidth, textLine->width());
     }
 
     if (maxLineWidth != m_maxLineWidth) {
@@ -332,9 +332,9 @@ int ContentView::checkLineVisible(int line) {
     auto viewRect = rect();
     auto fl = getFirstLastVisibleLines(viewRect);
 
-    if (line < fl.first)
+    if (line < fl.first())
         return -1;
-    else if (line > fl.second)
+    else if (line > fl.last())
         return 1;
     else
         return 0;
@@ -349,12 +349,14 @@ qreal ContentView::getLineColumnWidth(int line, int column) {
         auto lineCache = m_dataSource->lines;
         auto totalLines = lineCache->height();
 
-        auto first = qMin(totalLines, fl.first);
-        auto last = qMin(totalLines, fl.second);
+        auto first = qMin(totalLines, fl.first());
+        auto last = qMin(totalLines, fl.last());
         auto lines = lineCache->getLines(RangeI(first, last + 1)); // fix
 
         auto font = m_dataSource->defaultFont;
         auto xline = lines[line - first];
+
+        //return xline ? xline->assoc() ? xline->assoc()->indexTox(column) : 0 : 0;
 
         if (xline) {
             //auto textline = std::make_shared<TextLine>(xline->getText(), font);
@@ -380,7 +382,7 @@ int ContentView::checkLineColumnPosition(int line, int column) {
         return 0;
 }
 
-QPair<int, int> ContentView::posToLineColumn(const QPoint &pos) {
+LineColumn ContentView::posToLineColumn(const QPoint &pos) {
     auto viewRect = rect();
 
     auto linespace = m_dataSource->fontMetrics->height();
@@ -397,14 +399,14 @@ QPair<int, int> ContentView::posToLineColumn(const QPoint &pos) {
     auto first = std::min(totalLines, firstVisible);
     auto last = std::min(totalLines, lastVisible);
 
-     QPair<int, int> result(last, 0);
+    LineColumn result(false);
 
     auto lines = lineCache->getLines(RangeI(first, last + 1)); // fix
 
     auto font = m_dataSource->defaultFont;
     auto lineNum = qMax(0, int((pos.y() - topPad) / linespace + first));
 
-    if (lineNum > last) return result;
+    if (lineNum > last || lineNum < first) return result;
     auto line = lines[lineNum - first];
 
     if (!line) return result;
@@ -414,8 +416,9 @@ QPair<int, int> ContentView::posToLineColumn(const QPoint &pos) {
     if (textline) {
         auto column = textline->xToIndex(pos.x() - m_padding.left() - m_dataSource->gutterWidth);
 
-        result.first = lineNum;
-        result.second = column;
+        result.line(lineNum);
+        result.column(column);
+        result.setValid(true);
     }
 
     return result;
@@ -444,7 +447,7 @@ void ContentView::scrollX(int x) {
 
 void ContentView::updateHandler(const QJsonObject &json) {
     m_dataSource->lines->applyUpdate(json);
-    update();
+    repaint();
 }
 
 void ContentView::scrollHandler(int line, int column) {
@@ -584,9 +587,10 @@ void ContentView::keyPressEvent(QKeyEvent *ev) {
 void ContentView::mousePressEvent(QMouseEvent *e) {
     setFocus();
     auto lc = posToLineColumn(e->pos());
-    auto line = lc.first, column = lc.second;
-    m_connection->sendGesture(m_file->viewId(), line, column, "point_select");
-    m_drag = true;
+    if (lc.isValid()) {
+        m_connection->sendGesture(m_file->viewId(), lc.line(), lc.column(), "point_select");
+        m_drag = true;
+    }
     QWidget::mousePressEvent(e);
 }
 
@@ -594,8 +598,8 @@ void ContentView::mouseMoveEvent(QMouseEvent *e) {
     if (m_drag) {
         setFocus();
         auto lc = posToLineColumn(e->pos());
-        auto line = lc.first, column = lc.second;
-        m_connection->sendDrag(m_file->viewId(), line, column, 0);
+        if (lc.isValid())
+            m_connection->sendDrag(m_file->viewId(), lc.line(), lc.column(), 0);
         // TODO:
         // if line == first || line == last
         // need auto scroll
@@ -606,16 +610,14 @@ void ContentView::mouseMoveEvent(QMouseEvent *e) {
 void ContentView::mouseReleaseEvent(QMouseEvent *e) {
     setFocus();
     m_drag = false;
-    //auto lc = posToLineColumn(e->pos());
-    //auto line = lc.first, column = lc.second;
     QWidget::mouseReleaseEvent(e);
 }
 
 void ContentView::mouseDoubleClickEvent(QMouseEvent *e) {
     setFocus();
     auto lc = posToLineColumn(e->pos());
-    auto line = lc.first, column = lc.second;
-    m_connection->sendGesture(m_file->viewId(), line, column, "word_select");
+    if (lc.isValid())
+        m_connection->sendGesture(m_file->viewId(), lc.line(), lc.column(), "word_select");
     QWidget::mouseDoubleClickEvent(e);
 }
 

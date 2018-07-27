@@ -25,7 +25,7 @@ void LineCache::applyUpdate(const QJsonObject &json) {
     int newInvalidBefore = 0;
     int newInvalidAfter = 0;
     int oldIdx = 0;
-    std::vector<std::shared_ptr<Line>> newLines;
+    CacheLines newLines;
 
     auto ops = json["ops"].toArray();
     for (auto opref : ops) {
@@ -128,9 +128,9 @@ std::shared_ptr<xi::Line> LineCache::getLine(int ix) {
     return m_lines[ix];
 }
 
-std::vector<std::shared_ptr<xi::Line>> LineCache::getLines(const RangeI &range) {
-    std::vector<std::shared_ptr<Line>> result;
-    for (auto i = range.start() - m_invalidBefore; i < range.end(); ++i) {
+LineCache::CacheLines LineCache::getLines(const RangeI &range) {
+    CacheLines result;
+    for (auto i = qMax(0, range.start() - m_invalidBefore); i < range.end(); ++i) {
         if (i < m_lines.size()) {
             result.push_back(m_lines[i]);
         } else {

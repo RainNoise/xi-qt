@@ -11,7 +11,7 @@ namespace xi {
 
 static const char *XI_CONFIG_DIR = "XI_CONFIG_DIR";
 static const char *XI_PLUGINS = "plugins";
-static const char *XI_THEME = "InspiredGitHub"; // "base16-eighties.dark" // "InspiredGitHub"
+static const char *XI_THEME = "base16-eighties.dark"; // "base16-eighties.dark" // "InspiredGitHub"
 
 XiMainWindow::XiMainWindow(QWidget *parent) : QMainWindow(parent) {
     setupUI();
@@ -45,6 +45,9 @@ void XiMainWindow::setupUI() {
 void XiMainWindow::setupCore() {
     m_coreConnection = std::make_shared<CoreConnection>();
     m_coreConnection->init();
+
+    // start core thread;
+
 
     QString configDir = qEnvironmentVariable(XI_CONFIG_DIR);
     if (configDir.isEmpty())

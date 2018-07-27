@@ -1,12 +1,15 @@
 #include "core_connection.h"
 
 #include <QFuture>
+#include <QtGlobal>
 
 //! Startup and communication with the xi core thread.
 //! TODO
 //! 1. multi thread, queue, async
 
 namespace xi {
+
+//CoreConnection::CoreQueue g_queue;
 
 CoreConnection::CoreConnection(QObject *parent) : QObject(parent) {
     m_rpcIndex = 0;
@@ -20,27 +23,41 @@ void CoreConnection::init() {
     m_recvBuf->open(QBuffer::ReadWrite);
 
     //m_queue = std::make_shared<boost::lockfree::queue<QJsonObject>>();
+    //m_queue = std::make_shared<CoreQueue>();
 
     m_process.reset(new QProcess, [](QProcess *p) { p->close(); delete p; });
     m_process->setProcessChannelMode(QProcess::MergedChannels);
 
     // QObject::connect: Parentheses expected, signal xi::ReadXiCoreThread::finished in e:\sw5cc\newxi\xi-qt\src\coreconnection.cpp:59
-    //startCorePipeThread();
-    connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &CoreConnection::stdoutReceivedHandler);
+    startCorePipeThread();
+    //connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &CoreConnection::stdoutReceivedHandler);
 
     m_process->start("xi-core");
     m_process->waitForStarted();
 }
 
 void CoreConnection::startCorePipeThread() {
-    ReadCoreStdoutThread *readThread = new ReadCoreStdoutThread(m_process);
-    connect(readThread, &ReadCoreStdoutThread::resultReady, this, &CoreConnection::stdoutReceivedHandler);
+    ReadCoreStdoutThread *readThread = new ReadCoreStdoutThread(m_process, this);
+    //connect(readThread, &ReadCoreStdoutThread::resultReady, this, &CoreConnection::stdoutReceivedHandler);
     connect(readThread, &ReadCoreStdoutThread::finished, readThread, &ReadCoreStdoutThread::deleteLater);
     readThread->start();
 
+    //QThread thread;
+    //ReadCoreStdoutObject readObject(m_process, this);
+    //readObject.moveToThread(&thread);
+    //connect(m_process.get(), &QProcess::readyReadStandardOutput, &readObject, &ReadCoreStdoutObject::stdoutReceivedHandler);
+    //thread.start();
+
+    //m_readThread = new QThread();
+    //ReadCoreStdoutObject readObject(m_process, this);
+    //readObject.moveToThread(m_readThread);
+    //connect(m_process.get(), &QProcess::readyReadStandardOutput, &readObject, &ReadCoreStdoutObject::stdoutReceivedHandler);
+    //m_readThread->start();
+
     //WriteCoreStdinThread *writeThread = new WriteCoreStdinThread(m_process, m_queue);
-    //writeThread->start();
+    ////WriteCoreStdinThread *writeThread = new WriteCoreStdinThread(this);
     //connect(writeThread, &WriteCoreStdinThread::finished, writeThread, &WriteCoreStdinThread::deleteLater);
+    //writeThread->start();
 }
 
 static QHash<QString, CoreConnection::NotificationType> notificationMap;
@@ -264,7 +281,7 @@ void CoreConnection::stdoutReceivedHandler() {
         auto list = buf.split('\n');
         list.removeLast(); //empty
 
-        // loaded 
+        // loaded
         if (list.isEmpty()) {
             return;
         }
@@ -305,12 +322,7 @@ void CoreConnection::handleRpc(const QJsonObject &json) {
             if (it != m_pending.end()) {
                 auto handler = it.value();
                 m_pending.erase(it);
-                if (handler.type() == ResponseHandler::Emit) {
-                    result["emit"] = handler.getEmitData();
-                    emit RpcResponseReady(result);
-                } else {
-                    handler.invoke(result);
-                }
+                handler.invoke(result);
             }
         } else {
             handleRequest(json);
@@ -408,6 +420,8 @@ void CoreConnection::sendJson(const QJsonObject &json) {
     qDebug() << json;
 
     //m_queue->bounded_push(json);
+    //m_queue->push(json);
+    //g_queue.push(json);
 
     QJsonDocument doc(json);
     QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
@@ -415,84 +429,78 @@ void CoreConnection::sendJson(const QJsonObject &json) {
     m_process->waitForBytesWritten(); // async
 }
 
-ResponseHandler::ResponseHandler(CallbackType callback /*= nullptr*/) {
-    m_type = Callback;
+ResponseHandler::ResponseHandler(Callback callback /*= nullptr*/) {
     m_callback = std::move(callback);
 }
 
 ResponseHandler::ResponseHandler(const ResponseHandler &handler) {
     m_callback = std::move(handler.m_callback);
-    m_type = handler.m_type;
-    m_emitData = handler.m_emitData;
-}
-
-ResponseHandler::ResponseHandler(const QJsonObject &data) {
-    setEmitData(data);
 }
 
 void ResponseHandler::invoke(const QJsonObject &json) {
-    if (m_callback) m_callback(json);
+    if (m_callback)
+        m_callback(json);
 }
 
 ResponseHandler &ResponseHandler::operator=(const ResponseHandler &handler) {
-    m_callback = std::move(handler.m_callback);
-    m_type = handler.m_type;
-    m_emitData = handler.m_emitData;
+    if (this != &handler)
+        m_callback = std::move(handler.m_callback);
     return *this;
 }
 
-xi::ResponseHandler::Type ResponseHandler::type() const {
-    return m_type;
-}
-
-void ResponseHandler::type(Type type) {
-    m_type = type;
-}
-
-void ResponseHandler::setEmitData(const QJsonObject &data) {
-    m_type = Emit;
-    m_emitData = data;
-}
-
-QJsonObject ResponseHandler::getEmitData() const {
-    return m_emitData;
-}
-
-//void WriteCoreStdinThread::run() {
-//	while (1) {
-//		if (!m_queue) break;
-//		QJsonObject json;
-//		if (m_queue->pop(json)) {
-//			QJsonDocument doc(json);
-//			QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
-//			m_core->write(stream.toUtf8());
-//			m_core->waitForBytesWritten(); // async
-//		}
-//		msleep(1);
-//	}
-//}
-
-void ReadCoreStdoutThread::run() {
+void WriteCoreStdinThread::run() {
     while (1) {
-        if (!m_process) break;
-        if (m_process->canReadLine()) {
-            auto line = m_process->readLine();
-            emit resultReady(line);
-        }
-        //if (m_core->bytesAvailable() > 0) {
-        //	auto buf = m_readBuffer.buffer();
-        //	auto bytes = m_core->readAll();
-        //	for (auto b : bytes) {
-        //		buf.append(b);
-        //		if (b == '\n') {
-        //			QByteArray line(buf);
-        //			buf.clear();
-        //			emit resultReady(line);
-        //		}
-        //	}
+        //if (m_process && m_process->isWritable() && m_queue && !m_queue->empty()) {
+        //if (!m_queue->empty()) {
+        //    QJsonObject json;
+        //    if (m_queue->pop(json)) {
+        //        QJsonDocument doc(json);
+        //        QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
+        //        if (-1 == m_process->write(stream.toUtf8())) {
+        //            qFatal("process write error");
+        //        } else {
+        //            //int msecs = 30000
+        //            // TODO: FIX ASSERT ERROR
+        //            m_process->waitForBytesWritten();
+        //        }
+        //    }
         //}
         msleep(1);
     }
+}
+
+void ReadCoreStdoutThread::run() {
+    //while (1) {
+    //if (!m_process) break;
+    //if (m_process->canReadLine()) {
+    //    auto line = m_process->readLine();
+    //    emit resultReady(line);
+    //}
+    //if (m_core->bytesAvailable() > 0) {
+    //	auto buf = m_readBuffer.buffer();
+    //	auto bytes = m_core->readAll();
+    //	for (auto b : bytes) {
+    //		buf.append(b);
+    //		if (b == '\n') {
+    //			QByteArray line(buf);
+    //			buf.clear();
+    //			emit resultReady(line);
+    //		}
+    //	}
+    //}
+    //msleep(1);
+    //}
+    exec();
+}
+
+void ReadCoreStdoutThread::stdoutReceivedHandler() {
+    if (m_connection)
+        m_connection->stdoutReceivedHandler();
+}
+
+void ReadCoreStdoutObject::stdoutReceivedHandler() {
+    if (m_connection)
+        m_connection->stdoutReceivedHandler();
 }
 
 } // namespace xi

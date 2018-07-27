@@ -6,6 +6,7 @@ namespace xi {
 TextLine::TextLine(const QString &text, const std::shared_ptr<Font> &font) {
     m_text = text;
     m_font = font;
+    m_width = 0;
     m_fontMetrics = std::make_unique<QFontMetricsF>(font->getFont());
     m_layout = std::make_shared<QTextLayout>(text, font->getFont());
     m_selRanges = std::make_shared<QVector<SelRange>>();
@@ -120,6 +121,8 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
         height += qline.height();
     }
     textline->layout()->endLayout();
+
+    textline->m_width = textline->layout()->maximumWidth();
 
     return textline;
 }
