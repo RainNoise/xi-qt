@@ -5,8 +5,9 @@
 #include <QFontMetrics>
 #include <QFontMetricsF>
 #include <QGridLayout>
-#include <QOpenGLWidget>
 #include <QMargins>
+#include <QOpenGLFunctions>
+#include <QOpenGLWidget>
 #include <QPoint>
 #include <QScrollArea>
 #include <QTimer>
@@ -20,6 +21,7 @@
 
 //! TODO: OPENGL VSYNC FPS
 // #define ENABLE_GPU_RENDERING
+// #define ENABLE_SHADER
 
 namespace xi {
 
@@ -44,7 +46,7 @@ public:
 
 // Main Content
 #ifdef ENABLE_GPU_RENDERING
-class ContentView : public QOpenGLWidget {
+class ContentView : public QOpenGLWidget, protected QOpenGLFunctions {
 #else
 class ContentView : public QWidget {
 #endif

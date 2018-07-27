@@ -26,7 +26,7 @@ public:
     static Perference *shared();
 
     Theme theme() const;
-    void theme(const Theme &theme);
+    void setTheme(const Theme &theme);
 
     //void setTheme(const QString &name);
     //void setTheme(const QString &name, const Theme &theme);
@@ -41,7 +41,7 @@ public:
     StyleMap styleMap() const {
         return m_styleMap;
     }
-    void styleMap(const StyleMap &styleMap) {
+    void setStyleMap(const StyleMap &styleMap) {
         m_styleMap = styleMap;
     }
 

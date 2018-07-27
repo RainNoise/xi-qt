@@ -24,7 +24,7 @@ Theme Perference::theme() const {
 //    setTheme(name);
 //}
 
-void Perference::theme(const Theme &theme) {
+void Perference::setTheme(const Theme &theme) {
     m_theme = theme;
 }
 
