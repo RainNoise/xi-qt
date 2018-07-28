@@ -251,6 +251,8 @@ void EditWindow::updateCommandsHandler(const QString &viewId, const QStringList 
 }
 
 void EditWindow::configChangedHandler(const QString &viewId, const QJsonObject &changes) {
+    auto view = dynamic_cast<EditView *>(m_router[viewId]);
+    if (view) view->configChangedHandler(changes);
 }
 
 void EditWindow::defineStyleHandler(const QJsonObject &json) {

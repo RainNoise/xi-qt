@@ -76,10 +76,7 @@ void StyleMapState::applyStyle(const std::shared_ptr<TextLineBuilder> &builder, 
         if (style->m_fgColor.isValid()) {
             builder->addFgSpan(range, style->m_fgColor);
         }
-        //if (style->m_font) {
-        //    // ?
-        //}
-        builder->addFontSpan(range, style->m_info);
+        builder->addFontSpan(range, style->m_fontStyle);
 
         if (style->m_fakeItalic) {
             builder->addFakeItalicSpan(range);

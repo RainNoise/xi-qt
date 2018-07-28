@@ -25,7 +25,7 @@ private:
     int m_baseLine;
 };
 
-struct FontInfo {
+struct FontStyle {
     QString family;
     int size = 0;
     bool underline = false;

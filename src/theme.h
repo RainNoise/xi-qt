@@ -52,42 +52,21 @@ struct ThemeElement {
     operator QString() {
         return option;
     }
-    //operator QBrush() {
-    //    return color;
-    //}
 };
 
-#define THEME_ELEMENT_METHOD(TypeName)                                              \
-    void TypeName(const ThemeElement &element) { m_elements[#TypeName] = element; } \
-    ThemeElement TypeName() { return m_elements[#TypeName]; }
+#define THEME_ELEMENT_METHOD(TypeName)                                                     \
+    inline void TypeName(const ThemeElement &element) { m_elements[#TypeName] = element; } \
+    inline ThemeElement TypeName() const { return m_elements[#TypeName]; }
 
-#define THEME_LOCKED_METHOD(TypeName)                                          \
-    void TypeName(const ThemeElement &element) { m_inner->TypeName(element); } \
-    ThemeElement TypeName() { return m_inner->TypeName(); }
-
-//class ThemeList {
-//public:
-//    Theme get(const QString &name) {
-//        return m_themes[name];
-//    }
-//    void append(const QString &name, const Theme &theme) {
-//        m_themes[name] = theme;
-//    }
-//    void remove(const QString &name) {
-//    }
-//    bool contains(const QString &name) {
-//        return m_themes.contains(name);
-//    }
-//
-//private:
-//    QHash<QString, Theme> m_themes;
-//};
+#define THEME_LOCKED_METHOD(TypeName)                                                 \
+    inline void TypeName(const ThemeElement &element) { m_inner->TypeName(element); } \
+    inline ThemeElement TypeName() const { return m_inner->TypeName(); }
 
 class ThemeState : public UnfairLock {
 public:
-    ThemeState() {
+    using Elements = QHash<QString, ThemeElement>;
 
-    }
+    ThemeState();
 
     void applyUpdate(const QString &name, const QJsonObject &json);
 
@@ -125,9 +104,9 @@ public:
     THEME_ELEMENT_METHOD(tags_options);
 
 private:
-    void merge(const ThemeState &info);
+    void merge(const Elements &elements);
     QString m_name;
-    QHash<QString, ThemeElement> m_elements;
+    Elements m_elements;
 };
 
 class ThemeLocked {
@@ -190,13 +169,15 @@ public:
         m_state = state;
     }
 
-    std::shared_ptr<ThemeLocked> locked() {
+    inline std::shared_ptr<ThemeLocked> locked() {
         return std::make_shared<ThemeLocked>(m_state);
     }
 
 private:
     std::shared_ptr<ThemeState> m_state;
 };
+
+using ThemeList = QList<Theme>;
 
 } // namespace xi
 

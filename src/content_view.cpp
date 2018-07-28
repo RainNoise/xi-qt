@@ -6,6 +6,8 @@
 #include <QThreadPool>
 #include <QtConcurrent>
 
+#include "config.h"
+#include "theme.h"
 #include "perference.h"
 
 namespace xi {
@@ -134,9 +136,6 @@ ClosedRangeI ContentView::getFirstLastVisibleLines(const QRect &bound) {
 }
 
 void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
-
-    auto theme = Perference::shared()->theme()->locked();
-
     // for debug
     //renderer.drawRect(rect());
 
@@ -167,8 +166,9 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     }
 
     auto font = m_dataSource->defaultFont;
-    //auto styleMap = m_dataSource->styleMap;
+    auto theme = Perference::shared()->theme()->locked();
     auto styleMap = Perference::shared()->styleMap()->locked();
+
     QList<std::shared_ptr<TextLine>> textLines;
 
     m_firstLine = first;
@@ -430,10 +430,9 @@ LineColumn ContentView::posToLineColumn(const QPoint &pos) {
 
     if (!line) return result;
 
-    // auto textline = std::make_shared<TextLine>(line->getText(), font);
     auto textline = line->assoc();
     if (textline) {
-        auto column = textline->xToIndex(pos.x() - m_padding.left() - m_dataSource->gutterWidth);
+        auto column = textline->xToIndex(m_scrollOrigin.x() + pos.x() - m_padding.left() - m_dataSource->gutterWidth);
 
         result.line(lineNum);
         result.column(column);
@@ -453,19 +452,19 @@ void ContentView::scrollY(int y) {
     first = std::min(lines - 1, first);
     if (m_firstLine != first) {
         m_firstLine = first;
-        RangeI prefetch(qMax(0, m_firstLine - m_visibleLines), qMax(0, qMin(lines, m_firstLine + m_visibleLines * 2)));
+        RangeI prefetch(qMax(0, m_firstLine - m_visibleLines *3), qMax(0, qMin(lines, m_firstLine + m_visibleLines *3)));
         m_connection->sendScroll(m_file->viewId(), prefetch.start(), prefetch.end());
     }
     m_scrollOrigin.setY(m_firstLine * linespace);
-    update();
-    //repaint();
+    //update();
+    repaint();
     //asyncPaint();
 }
 
 void ContentView::scrollX(int x) {
     m_scrollOrigin.setX(x);
-    //repaint();
-    update();
+    repaint();
+    //update();
     //asyncPaint();
 }
 
@@ -483,7 +482,7 @@ void ContentView::updateHandler(const QJsonObject &json) {
 }
 
 void ContentView::scrollHandler(int line, int column) {
-    update();
+    repaint();
 }
 
 void ContentView::keyPressEvent(QKeyEvent *ev) {
@@ -618,6 +617,10 @@ void ContentView::keyPressEvent(QKeyEvent *ev) {
 }
 
 void ContentView::mousePressEvent(QMouseEvent *e) {
+    if (m_mouseDoubleCheckTimer.remainingTime() > 0) {
+        return;
+    }
+
     setFocus();
     auto lc = posToLineColumn(e->pos());
     if (lc.isValid()) {
@@ -649,8 +652,12 @@ void ContentView::mouseReleaseEvent(QMouseEvent *e) {
 void ContentView::mouseDoubleClickEvent(QMouseEvent *e) {
     setFocus();
     auto lc = posToLineColumn(e->pos());
-    if (lc.isValid())
+    if (lc.isValid()) {
+        m_mouseDoubleCheckTimer.setSingleShot(true);
+        m_mouseDoubleCheckTimer.start(100);
+        
         m_connection->sendGesture(m_file->viewId(), lc.line(), lc.column(), "word_select");
+    }
     QWidget::mouseDoubleClickEvent(e);
 }
 
@@ -701,7 +708,13 @@ void ContentView::asyncPaint(int ms /*= 100*/) {
 }
 
 void ContentView::themeChangedHandler() {
-    update();
+    repaint();
+}
+
+void ContentView::configChangedHandler(const QJsonObject &changes) {
+    QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+        m_dataSource->config->locked()->applyUpdate(changes);
+    });
 }
 
 AsyncPaintTimer::AsyncPaintTimer(QWidget *parent) {
@@ -716,6 +729,11 @@ void AsyncPaintTimer::update() {
         m_contentView->update();
         m_contentView->m_asyncPaintQueue.clear();
     }
+}
+
+ DataSource::DataSource() {
+    lines = std::make_shared<LineCache>();
+    config = std::make_shared<Config>();
 }
 
 } // namespace xi

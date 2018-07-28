@@ -75,13 +75,12 @@ Line::Line(std::shared_ptr<Line> line, const QJsonObject &json) {
 }
 
 Line &Line::operator=(const Line &line) {
-    if (this == &line) {
-        return *this;
+    if (this != &line) {
+        m_text = line.m_text;
+        m_cursor = line.m_cursor;
+        m_styles = line.m_styles;
+        m_assoc = line.m_assoc;
     }
-    m_text = line.m_text;
-    m_cursor = line.m_cursor;
-    m_styles = line.m_styles;
-    m_assoc = line.m_assoc;
     return *this;
 }
 
@@ -159,7 +158,7 @@ InvalSet LineCacheState::applyUpdate(const QJsonObject &json) {
                     for (auto i = startIx; i < startIx + nCopy; ++i) {
                         newLines.push_back(std::move(m_lines[i]));
                     }
-                } else { // CoreConnection::Ops_Update
+                } else { // Ops_Update
                     QJsonArray jsonLines = op["lines"].toArray();
                     auto jsonIx = n - nRemaining;
                     for (auto ix = startIx; ix < startIx + nCopy; ++ix) {

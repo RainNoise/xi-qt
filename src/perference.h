@@ -5,21 +5,9 @@
 
 #include "style_map.h"
 #include "theme.h"
+#include "config.h"
 
 namespace xi {
-
-class StyleMap;
-
-/// Share
-/// xi::Perference::shared()->theme();
-/// xi::Perference::shared()->keymap();
-/// xi::Perference::shared()->setting();
-
-//struct Settings {
-//    StyleMap styleMap;
-//    Font font;
-//    Font cjkFont;
-//};
 
 class Perference {
 public:
@@ -33,11 +21,16 @@ public:
         return m_styleMap;
     }
 
+    std::shared_ptr<Config> config() const {
+        return m_config;
+    }
+
 private:
     Perference();
 
     std::shared_ptr<Theme> m_theme;
     std::shared_ptr<StyleMap> m_styleMap;
+    std::shared_ptr<Config> m_config;
 };
 
 } // namespace xi

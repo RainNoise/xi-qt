@@ -30,6 +30,7 @@ public:
     void updateHandler(const QJsonObject &json);
     void scrollHandler(int line, int column);
     void themeChangedHandler();
+    void configChangedHandler(const QJsonObject &changes);
 
 protected:
     virtual void resizeEvent(QResizeEvent *event) override;

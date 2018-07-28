@@ -399,9 +399,8 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
         //emit updateCommandsReceived(viewIdentifier, line, column);
     } break;
     case Notification_ConfigChanged: {
-        //auto line = params["line"].toInt();
-        //auto column = params["col"].toInt();
-        //emit configChangedReceived(viewIdentifier, line, column);
+        auto changes = params["changes"].toObject();
+        emit configChangedReceived(viewIdentifier, changes);
     } break;
     case Notification_Alert: {
         auto message = params["msg"].toString();

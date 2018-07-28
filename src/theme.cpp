@@ -7,7 +7,7 @@
 namespace xi {
 
 // https://docs.rs/syntect/2.1.0/syntect/highlighting/struct.ThemeSettings.html
-const char *names[] = {
+static const char *names[] = {
     "accent",                        // A color made available for use by the theme.
     "active_guide",                  // Color of the guide lined up with the caret. Only applied if the indent_guide_options setting is set to draw_active.
     "background",                    // The default backgound color of the view.
@@ -42,13 +42,13 @@ const char *names[] = {
     "tags_options",                  // Controls certain options when the caret is next to a tag. Only applied when the match_tags setting is set to true.
 };
 
-//Theme Theme::defaultTheme() {
-//    Theme theme;
-//    theme.foreground(QColor::fromRgb(255, 215, 0));
-//    theme.background(Qt::black);
-//    theme.caret(QColor::fromRgb(220, 220, 220));
-//    return theme;
-//}
+ThemeState::Elements defaultThemeElements() {
+    ThemeState::Elements elements;
+    elements["foreground"] = QColor::fromRgb(255, 215, 0);
+    elements["background"] = Qt::black;
+    elements["caret"] = QColor::fromRgb(220, 220, 220);
+    return elements;
+}
 
 QColor to_color(const QJsonObject &json) {
     auto a = json["a"].toInt();
@@ -56,6 +56,9 @@ QColor to_color(const QJsonObject &json) {
     auto g = json["g"].toInt();
     auto r = json["r"].toInt();
     return QColor(r, g, b, a);
+}
+
+ ThemeState::ThemeState() {
 }
 
 void ThemeState::applyUpdate(const QString &name, const QJsonObject &json) {
@@ -68,15 +71,6 @@ void ThemeState::applyUpdate(const QString &name, const QJsonObject &json) {
             continue;
         }
         auto value = json[name];
-        //enum Type {
-        //    Null = 0x0,
-        //    Bool = 0x1,
-        //    Double = 0x2,
-        //    String = 0x3,
-        //    Array = 0x4,
-        //    Object = 0x5,
-        //    Undefined = 0x80
-        //};
         auto type = value.type();
         if (value.isNull()) {
             element.type = ThemeElement::Null;
@@ -88,14 +82,14 @@ void ThemeState::applyUpdate(const QString &name, const QJsonObject &json) {
             element.color = to_color(json[names[i]].toObject());
         }
     }
-    //merge(defaultTheme());
+    //merge(defaultThemeElements());
 }
 
-void ThemeState::merge(const ThemeState &info) {
+void ThemeState::merge(const Elements &elements) {
     for (auto i = 0; i < std::size(names); ++i) {
         auto &element = m_elements[names[i]];
         if (element.type == ThemeElement::Null) {
-            element = info.m_elements[names[i]];
+            element = elements[names[i]];
         }
     }
 }

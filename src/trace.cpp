@@ -20,10 +20,6 @@ void Trace::setEnabled(bool enabled) {
 
 void Trace::trace(const QString &name, TraceCategory cat, TracePhase ph) {
     using namespace std::chrono;
-    // const auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).count();
-    // milliseconds microseconds
-    // https://www.guyrutenberg.com/2013/01/27/using-stdchronohigh_resolution_clock-example/
-    // https://stackoverflow.com/questions/19555121/how-to-get-current-timestamp-in-milliseconds-since-1970-just-the-way-java-gets
     auto timestamp = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
 
     QMutexLocker locker(&m_mutex);
@@ -33,7 +29,6 @@ void Trace::trace(const QString &name, TraceCategory cat, TracePhase ph) {
     m_buf->at(i).cat = cat;
     m_buf->at(i).ph = ph;
     m_buf->at(i).abstime = timestamp;
-    // https://stackoverflow.com/questions/19854932/is-there-a-portable-way-to-give-thread-name-with-qt
     // buf[i].thread_name =
     m_buf->at(i).tid = (quint64)QThread::currentThreadId();
     m_n_entries++;
@@ -92,7 +87,6 @@ Trace::Trace() {
     m_buf = std::make_unique<std::vector<TraceEntry>>(BUF_SIZE);
 }
 
-// https://stackoverflow.com/questions/18837857/cant-use-enum-class-as-unordered-map-key
 struct EnumClassHash {
     template <typename T>
     std::size_t operator()(T t) const {

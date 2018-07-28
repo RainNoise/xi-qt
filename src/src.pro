@@ -49,7 +49,8 @@ SOURCES += \
     perference.cpp \
     xi.cpp \
     style_span.cpp \
-    style.cpp
+    style.cpp \
+    config.cpp
 
 HEADERS += \
         ximainwindow.h \
@@ -73,7 +74,8 @@ HEADERS += \
     perference.h \
     xi.h \
     style_span.h \
-    style.h
+    style.h \
+    config.h
 
 DISTFILES += \
     resources/icons/xi-editor-app.png \

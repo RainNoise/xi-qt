@@ -53,22 +53,22 @@ public:
 
     Line &operator=(const Line &line);
 
-    QString getText() {
+    inline QString getText() const {
         return m_text;
     }
-    bool containsCursor() {
+    inline bool containsCursor() const {
         return m_cursor->count() > 0;
     }
-    std::shared_ptr<QList<int>> getCursor() {
+    inline std::shared_ptr<QList<int>> getCursor() const {
         return m_cursor;
     }
-    std::shared_ptr<QList<StyleSpan>> getStyles() {
+    inline std::shared_ptr<QList<StyleSpan>> getStyles() const {
         return m_styles;
     }
-    void setAssoc(const std::shared_ptr<TextLine> &assoc) {
+    inline void setAssoc(const std::shared_ptr<TextLine> &assoc) {
         m_assoc = assoc;
     }
-    std::shared_ptr<TextLine> assoc() {
+    inline std::shared_ptr<TextLine> assoc() const {
         return m_assoc;
     }
 
@@ -87,15 +87,15 @@ public:
         m_waitingForLines = std::make_unique<QSemaphore>(0);
     }
 
-    bool isEmpty() {
+    inline bool isEmpty() const {
         return m_lines.count() == 0;
     }
 
-    int height() {
+    inline int height() const {
         return m_invalidBefore + m_lines.count() + m_invalidAfter;
     }
 
-    int revision() {
+    inline int revision() const {
         return m_revision;
     }
 
@@ -166,29 +166,29 @@ public:
         }
     }
 
-    int MAX_BLOCK_MS = 30;
+    const int MAX_BLOCK_MS = 30;
 
-    bool isEmpty() {
+    inline bool isEmpty() const {
         return m_inner->isEmpty();
     }
 
-    int height() {
+    inline int height() const {
         return m_inner->height();
     }
 
-    int revision() {
+    inline int revision() const {
         return m_inner->revision();
     }
 
-    std::shared_ptr<Line> get(int ix) {
+    inline std::shared_ptr<Line> get(int ix) const {
         return m_inner->get(ix);
     }
 
-    void setAssoc(int ix, const std::shared_ptr<TextLine> &assoc) {
+    inline void setAssoc(int ix, const std::shared_ptr<TextLine> &assoc) {
         m_inner->setAssoc(ix, assoc);
     }
 
-    void flushAssoc() {
+    inline void flushAssoc() {
         m_inner->flushAssoc();
     }
 
@@ -221,7 +221,7 @@ public:
         return false;
     }
 
-    InvalSet cursorInval() {
+    inline InvalSet cursorInval() {
         return m_inner->cursorInval();
     }
 
@@ -243,15 +243,15 @@ public:
         return std::make_shared<LineCacheLocked>(m_state);
     }
 
-    bool isEmpty() {
+    inline bool isEmpty() {
         return locked()->isEmpty();
     }
 
-    int height() {
+    inline int height() {
         return locked()->height();
     }
 
-    InvalSet cursorInval() {
+    inline InvalSet cursorInval() {
         return locked()->cursorInval();
     }
 

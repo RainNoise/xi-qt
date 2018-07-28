@@ -47,7 +47,7 @@ EditView::EditView(const std::shared_ptr<File> &file, const std::shared_ptr<Core
     connect(m_scrollBarV, &QScrollBar::valueChanged, this, &EditView::scrollBarVChanged);
     connect(m_scrollBarH, &QScrollBar::valueChanged, this, &EditView::scrollBarHChanged);
 
-    //QFile qss(":/resources/qss/scroll_bar.qss");  // :/resources/icons/xi-editor.ico
+    //QFile qss(":/resources/qss/scroll_bar.qss");
     //qss.open(QFile::ReadOnly);
     //auto scrollBarStyle = qss.readAll();
     //m_scrollBarV->setStyleSheet(scrollBarStyle);
@@ -86,7 +86,7 @@ void EditView::scrollHandler(int line, int column) {
     if (check != 0) {
         auto delta = check * m_content->width() / 2.f;
         auto value = m_scrollBarH->value();
-        m_scrollBarH->setValue(value + delta); //
+        m_scrollBarH->setValue(value + delta);
     }
     if (m_content) {
         m_content->scrollHandler(line, column);
@@ -97,6 +97,10 @@ void EditView::themeChangedHandler() {
     //Scrollbar
     //Content
     m_content->themeChangedHandler();
+}
+
+void EditView::configChangedHandler(const QJsonObject &changes) {
+    m_content->configChangedHandler(changes);
 }
 
 void EditView::resizeEvent(QResizeEvent *event) {
@@ -114,7 +118,7 @@ void EditView::relayoutScrollBar() {
     auto linespace = m_content->getLinespace();
 
     auto contentHeight = m_content->getContentHeight();
-    m_scrollBarV->setRange(0, contentHeight - linespace); // keep one line
+    m_scrollBarV->setRange(0, contentHeight - linespace); // keep the last line
     m_scrollBarV->setSingleStep(m_content->getLinespace());
     m_scrollBarV->setPageStep(widgetHeight);
     m_scrollBarV->setVisible(contentHeight > widgetHeight);

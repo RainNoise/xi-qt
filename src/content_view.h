@@ -26,18 +26,18 @@
 
 namespace xi {
 
+class Config;
+
 // TODO (CV)
 class DataSource {
 public:
-    DataSource() {
-        lines = std::make_shared<LineCache>();
-    }
+    DataSource();
     std::shared_ptr<Font> defaultFont;
     // TODO
     //std::shared_ptr<Font> cjkFont;
     //bool cjkFontEnable;
     std::shared_ptr<LineCache> lines;
-    std::shared_ptr<StyleMap> styleMap;
+    std::shared_ptr<Config> config;
     std::shared_ptr<QFontMetricsF> fontMetrics;
     qreal gutterWidth;
 };
@@ -56,22 +56,22 @@ public:
         lc.second = column;
         setValid(true);
     }
-    bool isValid() {
+    inline bool isValid() const {
         return valid;
     }
-    void setValid(bool valid) {
+    inline void setValid(bool valid) {
         this->valid = valid;
     }
-    int line() {
+    inline int line() const {
         return lc.first;
     }
-    void line(int line) {
+    inline void line(int line) {
         lc.first = line;
     }
-    int column() {
+    inline int column() const {
         return lc.second;
     }
-    void column(int column) {
+    inline void column(int column) {
         lc.second = column;
     }
 

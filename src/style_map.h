@@ -45,15 +45,15 @@ public:
         m_inner->unlock();
     }
 
-    void defStyle(const QJsonObject &json) {
+    inline void defStyle(const QJsonObject &json) {
         m_inner->defStyle(json);
     }
 
-    void applyStyle(const std::shared_ptr<TextLineBuilder> &builder, int id, const RangeI &range, const QColor &selColor) {
+    inline void applyStyle(const std::shared_ptr<TextLineBuilder> &builder, int id, const RangeI &range, const QColor &selColor) {
         m_inner->applyStyle(builder, id, range, selColor);
     }
 
-    void applyStyles(const std::shared_ptr<TextLineBuilder> &builder,
+    inline void applyStyles(const std::shared_ptr<TextLineBuilder> &builder,
                      std::shared_ptr<QList<StyleSpan>> styles,
                      const QColor &selColor, const QColor &highlightColor) {
         m_inner->applyStyles(builder, styles, selColor, highlightColor);
@@ -69,7 +69,7 @@ public:
         m_state = std::make_shared<StyleMapState>();
     }
 
-    std::shared_ptr<StyleMapLocked> locked() {
+    inline std::shared_ptr<StyleMapLocked> locked() {
         return std::make_shared<StyleMapLocked>(m_state);
     }
 
