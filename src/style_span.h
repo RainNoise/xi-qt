@@ -24,10 +24,10 @@ public:
 
     static std::shared_ptr<QList<StyleSpan>> styles(const QJsonArray &object, const QString &text);
 
-    StyleIdentifier style() const {
+    inline StyleIdentifier style() const {
         return m_style;
     }
-    RangeI range() const {
+    inline RangeI range() const {
         return m_range;
     }
 

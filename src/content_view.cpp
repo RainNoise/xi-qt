@@ -31,24 +31,11 @@ ContentView::ContentView(
 
     m_connection = connection;
     m_file = file;
-    m_dataSource = std::make_shared<DataSource>();
-    {
-        QString family = "Inconsolata";
-        int size = 14;              // 1920x1080
-        int weight = QFont::Normal; // OpenType weight value
-        bool italic = false;
-        QFont font(family, size, weight, italic);
-        // PreferQuality PreferDefault PreferAntialias
-        font.setStyleHint(QFont::Monospace, QFont::StyleStrategy(QFont::PreferQuality | QFont::ForceIntegerMetrics));
-        font.setFixedPitch(true);
-        font.setKerning(false);
-        m_dataSource->defaultFont = std::make_shared<Font>(font);
-    }
-    m_dataSource->fontMetrics = std::make_shared<QFontMetricsF>(m_dataSource->defaultFont->getFont());
-    m_dataSource->gutterWidth = 0;
     m_firstLine = 0;
     m_visibleLines = 0;
     m_maxLineWidth = 0;
+
+    m_dataSource = std::make_shared<DataSource>();
 
     m_padding.setLeft(2);
     m_padding.setTop(0);
@@ -75,8 +62,6 @@ bool ContentView::event(QEvent *e) {
 #endif
 }
 
-//static int times = 1;
-
 void ContentView::paintEvent(QPaintEvent *event) {
 
 #ifdef ENABLE_GPU_RENDERING
@@ -90,12 +75,6 @@ void ContentView::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     auto dirtyRect = event->rect(); //simple
     paint(painter, dirtyRect);
-    //if (times == 1) {
-    //    painter.fillRect(rect(), Qt::black);
-    //    times--;
-    //} else {
-    //    return;
-    //}
 #endif
 }
 
@@ -122,7 +101,7 @@ void ContentView::sendEdit(const QString &method) {
     }
 }
 
-ClosedRangeI ContentView::getFirstLastVisibleLines(const QRect &bound) {
+ClosedRangeI ContentView::getVisibleLinesRange(const QRect &bound) {
     auto linespace = m_dataSource->fontMetrics->height();
     auto topPad = linespace - m_dataSource->fontMetrics->ascent();
     auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
@@ -343,13 +322,14 @@ int ContentView::getColumn(int line, int x) {
     auto lineCache = m_dataSource->lines->locked();
     auto cacheLine = lineCache->get(line);
     if (!cacheLine) return -1;
-    auto textline = std::make_shared<TextLine>(cacheLine->getText(), m_dataSource->defaultFont);
-    return textline->xToIndex(x);
+    auto textline = cacheLine->assoc();
+    if (!textline) return -1;
+    return textline->xToIndex(m_scrollOrigin.x() + getXOff() + x);
 }
 
 int ContentView::checkLineVisible(int line) {
     auto viewRect = rect();
-    auto fl = getFirstLastVisibleLines(viewRect);
+    auto fl = getVisibleLinesRange(viewRect);
 
     if (line < fl.first())
         return -1;
@@ -359,40 +339,20 @@ int ContentView::checkLineVisible(int line) {
         return 0;
 }
 
-qreal ContentView::getLineColumnWidth(int line, int column) {
-    auto lineVisible = checkLineVisible(line);
-    if (lineVisible == 0) {
-        auto viewRect = rect();
-        auto fl = getFirstLastVisibleLines(viewRect);
-
-        auto lineCache = m_dataSource->lines->locked();
-        auto totalLines = lineCache->height();
-
-        auto first = qMin(totalLines, fl.first());
-        auto last = qMin(totalLines, fl.last());
-        auto lines = lineCache->blockingGet(RangeI(first, last + 1)); // fix
-
-        auto font = m_dataSource->defaultFont;
-        auto xline = lines[line - first];
-
-        //return xline ? xline->assoc() ? xline->assoc()->indexTox(column) : 0 : 0;
-
-        if (xline) {
-            //auto textline = std::make_shared<TextLine>(xline->getText(), font);
-            auto textline = xline->assoc();
-            if (textline) {
-                auto width = textline->indexTox(column);
-                return width;
-            }
-        } else {
-            return 0;
+qreal ContentView::getWidth(int lineIx, int columnIx) {
+    auto lineCache = m_dataSource->lines->locked();
+    auto line = lineCache->get(lineIx);
+    if (line) {
+        auto textLine = line->assoc();
+        if (textLine) {
+            return textLine->indexTox(columnIx);
         }
     }
     return 0;
 }
 
-int ContentView::checkLineColumnPosition(int line, int column) {
-    auto delta = getLineColumnWidth(line, column) - m_scrollOrigin.x();
+int ContentView::checkPosition(int line, int column) {
+    auto delta = getWidth(line, column) - m_scrollOrigin.x();
     if (delta < 0)
         return -1;
     else if (delta > width())
@@ -402,44 +362,15 @@ int ContentView::checkLineColumnPosition(int line, int column) {
 }
 
 LineColumn ContentView::posToLineColumn(const QPoint &pos) {
-    auto viewRect = rect();
-
-    auto linespace = m_dataSource->fontMetrics->height();
-    auto topPad = linespace - m_dataSource->fontMetrics->ascent();
-    auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
-    auto yOff = topPad - m_scrollOrigin.y();
-
-    auto firstVisible = std::max(0, (int)(std::ceil((viewRect.y() - topPad + m_scrollOrigin.y()) / linespace)));
-    auto lastVisible = std::max(0, (int)(std::floor((viewRect.y() + viewRect.height() - topPad + m_scrollOrigin.y()) / linespace)));
-
+    auto line = getLine(pos.y());
+    auto column = getColumn(line, pos.x());
     auto lineCache = m_dataSource->lines->locked();
     auto totalLines = lineCache->height();
-
-    auto first = std::min(totalLines, firstVisible);
-    auto last = std::min(totalLines, lastVisible);
-
-    LineColumn result(false);
-
-    auto lines = lineCache->blockingGet(RangeI(first, last + 1)); // fix
-
-    auto font = m_dataSource->defaultFont;
-    auto lineNum = qMax(0, int((pos.y() - topPad) / linespace + first));
-
-    if (lineNum > last || lineNum < first) return result;
-    auto line = lines[lineNum - first];
-
-    if (!line) return result;
-
-    auto textline = line->assoc();
-    if (textline) {
-        auto column = textline->xToIndex(m_scrollOrigin.x() + pos.x() - m_padding.left() - m_dataSource->gutterWidth);
-
-        result.line(lineNum);
-        result.column(column);
-        result.setValid(true);
+    if (line >= totalLines) {
+        line = totalLines-1;
+        column = lineCache->get(line)->utf8Length();
     }
-
-    return result;
+    return LineColumn(line, column);
 }
 
 void ContentView::scrollY(int y) {
@@ -448,11 +379,13 @@ void ContentView::scrollY(int y) {
     auto lines = getLines();
     if (lines == 0) return;
 
+    constexpr auto kMaxPrefetch = 3;
+
     auto first = std::max(0, (int)(std::floor(value / qreal(linespace) + 0.9))); // last line [visible]
     first = std::min(lines - 1, first);
     if (m_firstLine != first) {
         m_firstLine = first;
-        RangeI prefetch(qMax(0, m_firstLine - m_visibleLines *3), qMax(0, qMin(lines, m_firstLine + m_visibleLines *3)));
+        RangeI prefetch(qMax(0, m_firstLine - m_visibleLines * kMaxPrefetch), qMin(lines, m_firstLine + m_visibleLines * kMaxPrefetch));
         m_connection->sendScroll(m_file->viewId(), prefetch.start(), prefetch.end());
     }
     m_scrollOrigin.setY(m_firstLine * linespace);
@@ -734,6 +667,20 @@ void AsyncPaintTimer::update() {
  DataSource::DataSource() {
     lines = std::make_shared<LineCache>();
     config = std::make_shared<Config>();
-}
+    {
+        QString family = "Inconsolata";
+        int size = 14;              // 1920x1080
+        int weight = QFont::Normal; // OpenType weight value
+        bool italic = false;
+        QFont font(family, size, weight, italic);
+        // PreferQuality PreferDefault PreferAntialias
+        font.setStyleHint(QFont::Monospace, QFont::StyleStrategy(QFont::PreferQuality | QFont::ForceIntegerMetrics));
+        font.setFixedPitch(true);
+        font.setKerning(false);
+        defaultFont = std::make_shared<Font>(font);
+    }
+    fontMetrics = std::make_shared<QFontMetricsF>(defaultFont->getFont());
+    gutterWidth = 0;
+ }
 
 } // namespace xi

@@ -22,14 +22,8 @@ QColor colorFromArgb(quint32 argb);
 class StyleMapState : public UnfairLock {
 public:
     void defStyle(const QJsonObject &json);
-
     void applyStyle(const std::shared_ptr<TextLineBuilder> &builder, int id, const RangeI &range, const QColor &selColor);
-
-    void applyStyles(const std::shared_ptr<TextLineBuilder> &builder,
-                     std::shared_ptr<QList<StyleSpan>> styles,
-                     const QColor &selColor, const QColor &highlightColor);
-
-    StyleMapState &operator=(const StyleMapState &styleMap);
+    void applyStyles(const std::shared_ptr<TextLineBuilder> &builder, const std::shared_ptr<QList<StyleSpan>> &styles, const QColor &selColor, const QColor &highlightColor);    
 
 private:
     QList<std::shared_ptr<Style>> m_styles;

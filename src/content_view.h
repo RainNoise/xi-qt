@@ -44,40 +44,28 @@ public:
 
 class LineColumn {
 public:
-    static LineColumn invalid() {
-        return LineColumn(false);
-    }
-
-    LineColumn(bool valid = true) {
-        setValid(valid);
-    }
     LineColumn(int line, int column) {
-        lc.first = line;
-        lc.second = column;
-        setValid(true);
+        m_lc.first = line;
+        m_lc.second = column;
     }
-    inline bool isValid() const {
-        return valid;
-    }
-    inline void setValid(bool valid) {
-        this->valid = valid;
+    bool isValid() {
+        return line() >= 0 && column() >= 0;
     }
     inline int line() const {
-        return lc.first;
+        return m_lc.first;
     }
     inline void line(int line) {
-        lc.first = line;
+        m_lc.first = line;
     }
     inline int column() const {
-        return lc.second;
+        return m_lc.second;
     }
     inline void column(int column) {
-        lc.second = column;
+        m_lc.second = column;
     }
 
 private:
-    bool valid;
-    QPair<int, int> lc;
+    QPair<int, int> m_lc;
 };
 
 class ContentView;
@@ -140,10 +128,10 @@ public:
     int getColumn(int line, int x);
 
     int checkLineVisible(int line);
-    qreal getLineColumnWidth(int line, int column);
-    int checkLineColumnPosition(int line, int column);
+    qreal getWidth(int line, int column);
+    int checkPosition(int line, int column);
     LineColumn posToLineColumn(const QPoint &pos);
-    ClosedRangeI getFirstLastVisibleLines(const QRect &bound);
+    ClosedRangeI getVisibleLinesRange(const QRect &bound);
 
     // TODO. FAST SCROLL LOOOONG FILE
     void asyncPaint(int ms = 100);

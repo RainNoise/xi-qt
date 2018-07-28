@@ -55,9 +55,7 @@ EditView::EditView(const std::shared_ptr<File> &file, const std::shared_ptr<Core
 }
 
 void EditView::updateHandler(const QJsonObject &json) {
-    if (m_content) {
-        m_content->updateHandler(json);
-    }
+    m_content->updateHandler(json);
     relayoutScrollBar();
 }
 
@@ -82,15 +80,14 @@ void EditView::scrollHandler(int line, int column) {
     //	auto delta = line * linespace;
     //	m_scrollBarV->setValue(delta); // -m_content->height()
     //}
-    auto check = m_content->checkLineColumnPosition(line, column);
-    if (check != 0) {
-        auto delta = check * m_content->width() / 2.f;
+    auto checkResult = m_content->checkPosition(line, column);
+    if (checkResult != 0) {
+        auto delta = checkResult * m_content->width() / 2.f;
         auto value = m_scrollBarH->value();
         m_scrollBarH->setValue(value + delta);
     }
-    if (m_content) {
-        m_content->scrollHandler(line, column);
-    }
+
+    m_content->scrollHandler(line, column);
 }
 
 void EditView::themeChangedHandler() {

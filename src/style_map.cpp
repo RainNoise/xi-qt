@@ -87,7 +87,7 @@ void StyleMapState::applyStyle(const std::shared_ptr<TextLineBuilder> &builder, 
     }
 }
 
-void StyleMapState::applyStyles(const std::shared_ptr<TextLineBuilder> &builder, std::shared_ptr<QList<StyleSpan>> styles, const QColor &selColor, const QColor &highlightColor) {
+void StyleMapState::applyStyles(const std::shared_ptr<TextLineBuilder> &builder, const std::shared_ptr<QList<StyleSpan>> &styles, const QColor &selColor, const QColor &highlightColor) {
     foreach (StyleSpan ss, *styles) {
         QColor color;
         auto id = ss.style();
@@ -104,13 +104,6 @@ void StyleMapState::applyStyles(const std::shared_ptr<TextLineBuilder> &builder,
         }
         applyStyle(builder, id, ss.range(), color);
     }
-}
-
-StyleMapState &StyleMapState::operator=(const StyleMapState &styleMap) {
-    if (this != &styleMap) {
-        m_styles = styleMap.m_styles;
-    }
-    return *this;
 }
 
 } // namespace xi

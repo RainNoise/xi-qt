@@ -56,6 +56,9 @@ public:
     inline QString getText() const {
         return m_text;
     }
+    inline int utf8Length() const {
+        return m_text.toUtf8().length();
+    }
     inline bool containsCursor() const {
         return m_cursor->count() > 0;
     }
@@ -128,6 +131,10 @@ public:
         }
         return nullptr;
     }
+
+    //std::shared_ptr<Line> last() {
+    //    
+    //}
 
     InvalSet cursorInval() {
         InvalSet inval;

@@ -21,20 +21,6 @@ protected:
     std::unique_ptr<QMutex> m_lock;
 };
 
-//class UnfairLocker {
-//public:
-//    UnfairLocker(UnfairLock &mutex) {
-//        m_mutex = &mutex;
-//        m_mutex->lock();
-//    }
-//    ~UnfairLocker() {
-//        m_mutex->unlock();
-//    }
-//
-//protected:
-//    UnfairLock *m_mutex;
-//};
-
 } // namespace xi
 
 #endif // UNFAIRLOCK_H
