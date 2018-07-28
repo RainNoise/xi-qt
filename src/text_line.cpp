@@ -13,23 +13,6 @@ TextLine::TextLine(const QString &text, const std::shared_ptr<Font> &font) {
 }
 
 int TextLine::xToIndex(qreal x) {
-    //QString text = m_text;
-    //auto width = 0.f;
-    //auto idx = -1;
-    //for (auto i = 0; i < text.size(); ++i) {
-    //    width = m_fontMetrics->width(text.mid(0, i));
-    //    if (width >= x - m_fontMetrics->averageCharWidth() / 2) {
-    //        idx = i;
-    //        break;
-    //    }
-    //}
-    //if (idx == 0) return 0;
-    //if (idx == -1) return m_text.toUtf8().length();
-
-    //auto utf8Ix = text.mid(0, idx).toUtf8().length();
-    //return utf8Ix;
-
-    // TODO: IMPROVE
     if (m_layout->lineCount() > 0) {
         auto innerLine = m_layout->lineAt(0);
         auto idx = innerLine.xToCursor(x);
@@ -40,10 +23,6 @@ int TextLine::xToIndex(qreal x) {
 }
 
 qreal TextLine::indexTox(int ix) {
-    //if (ix < 0 || ix > m_text.size()) { return 0; }
-    //return m_fontMetrics->width(m_text.toUtf8().left(ix));
-
-    // TODO: IMPROVE
     if (m_layout->lineCount() > 0) {
         auto innerLine = m_layout->lineAt(0);
         auto utf8ix = m_text.toUtf8().mid(0, ix).length();
@@ -54,7 +33,6 @@ qreal TextLine::indexTox(int ix) {
 }
 
 std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
-    //auto theme = Perference::shared()->theme();
     auto textline = std::make_shared<TextLine>(m_text, m_font);
     int leading = textline->metrics()->leading();
     auto lineWidth = textline->metrics()->width(m_text); // slow
@@ -74,7 +52,6 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
     foreach(std::shared_ptr<ColorSpan> span, m_fgSpans) {
         QTextLayout::FormatRange fmt;
         QTextCharFormat cfmt;
-        //cfmt.setFont(m_font->getFont());
         if (span->payload.isValid()) {
             cfmt.setForeground(span->payload);
         }
@@ -87,7 +64,6 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
     foreach (std::shared_ptr<ColorSpan> span, m_selSpans) {
         QTextLayout::FormatRange fmt;
         QTextCharFormat cfmt;
-        //cfmt.setFont(m_font->getFont());
         cfmt.setBackground(span->payload);
         fmt.start = span->range.start();
         fmt.length = span->range.length();

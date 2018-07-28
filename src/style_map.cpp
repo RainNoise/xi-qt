@@ -45,6 +45,7 @@ void StyleMapState::defStyle(const QJsonObject &json) {
         auto w = json["weight"].toInt();
         // 0 - 1000 [400]
         // 0 - 100 [50]
+        // TODO
         weight = w * 0.1 + w % 10;
         weight = 75;
     }

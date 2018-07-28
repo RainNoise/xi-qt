@@ -54,8 +54,8 @@ Line::Line(const QJsonObject &json) {
 }
 
 Line::Line(std::shared_ptr<Line> line, const QJsonObject &json) {
+    m_assoc = nullptr;    
     if (!line) { return; }
-    m_assoc = nullptr;
     m_text = line->m_text;
     if (json.contains("cursor")) {
         m_cursor = std::make_shared<QList<int>>();

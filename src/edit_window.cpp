@@ -63,7 +63,6 @@ void EditWindow::openFile() {
     if (dlg->exec() == QDialog::Accepted) {
         filePathList = dlg->selectedFiles();
     } else {
-        // dlg->close();
         return;
     }
     openFile(QString(), filePathList.front());
@@ -91,7 +90,6 @@ void EditWindow::saveFile(bool saveAs) {
         if (dlg->exec() == QDialog::Accepted) {
             file->setPath(dlg->selectedFiles().front());
         } else {
-            // dlg->close();
             return;
         }
     }
@@ -228,7 +226,6 @@ void EditWindow::saveAllTab() {
 }
 
 void EditWindow::updateHandler(const QString &viewId, const QJsonObject &update) {
-    // TODO ASYNC
     auto view = dynamic_cast<EditView *>(m_router[viewId]);
     if (view) view->updateHandler(update);
 }
