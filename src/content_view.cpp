@@ -353,9 +353,9 @@ qreal ContentView::getWidth(int lineIx, int columnIx) {
 
 int ContentView::checkPosition(int line, int column) {
     auto delta = getWidth(line, column) - m_scrollOrigin.x();
-    if (delta < 0)
+    if (delta <= 0)
         return -1;
-    else if (delta > width())
+    else if (delta > width()-getXOff())
         return 1;
     else
         return 0;
