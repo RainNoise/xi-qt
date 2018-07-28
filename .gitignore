@@ -21,3 +21,4 @@ xi-qt.sln
 *.ipch
 *.VC.db
 *.VC.opendb
+src/packages.config
