@@ -9,6 +9,7 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLWidget>
 #include <QPoint>
+#include <QQueue>
 #include <QScrollArea>
 #include <QTimer>
 
@@ -79,6 +80,21 @@ private:
     QPair<int, int> lc;
 };
 
+class ContentView;
+
+class AsyncPaintTimer : public QObject {
+    Q_OBJECT
+public:
+    AsyncPaintTimer(QWidget *parent);
+
+public slots:
+    void update();
+
+private:
+    ContentView *m_contentView = nullptr;
+    std::unique_ptr<QTimer> m_timer;
+};
+
 #define SEND_EDIT_METHOD(TypeName) \
     void TypeName() { sendEdit(m_selectorToCommand[#TypeName]); }
 
@@ -89,6 +105,9 @@ class ContentView : public QOpenGLWidget, protected QOpenGLFunctions {
 class ContentView : public QWidget {
 #endif
     Q_OBJECT
+public:
+    friend class AsyncPaintTimer;
+
 public:
     ContentView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent);
 
@@ -125,6 +144,9 @@ public:
     int checkLineColumnPosition(int line, int column);
     LineColumn posToLineColumn(const QPoint &pos);
     ClosedRangeI getFirstLastVisibleLines(const QRect &bound);
+
+    // TODO. FAST SCROLL LOOOONG FILE
+    void asyncPaint(int ms = 100);
 
     void scrollY(int y);
     void scrollX(int x);
@@ -189,9 +211,12 @@ public:
     void scrollHandler(int line, int column);
     void pluginStartedHandler(const QString &pluginName);
     void pluginStoppedHandler(const QString &pluginName);
-    void availablePluginsHandler(const QVector<QJsonObject> &plugins);
-    void updateCommandsHandler(const QVector<QString> &commands);
+    void availablePluginsHandler(const QList<QJsonObject> &plugins);
+    void updateCommandsHandler(const QStringList &commands);
     void configChangedHandler(const QJsonObject &changes);
+
+    //II
+    void themeChangedHandler();
 
 private:
     std::shared_ptr<File> m_file;
@@ -204,8 +229,11 @@ private:
     QHash<QString, QString> m_selectorToCommand;
     QMarginsF m_padding;
     bool m_drag = false;
-    QTimer m_doubleCheckTimer;
+    QTimer m_mouseDoubleCheckTimer;
+    std::unique_ptr<AsyncPaintTimer> m_asyncPaintTimer;
+    QQueue<qint64> m_asyncPaintQueue;
 };
+
 } // namespace xi
 
 #endif // CONTENT_VIEW_H

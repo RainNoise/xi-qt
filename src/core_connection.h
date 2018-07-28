@@ -18,11 +18,13 @@
 #include <QTextStream>
 #include <QThread>
 #include <QVector>
+#include <QStringList>
 
 //#include "boost/lockfree/queue.hpp"
 //#include "boost/lockfree/spsc_queue.hpp"
 
 #include "theme.h"
+#include "unfair_lock.h"
 
 namespace xi {
 
@@ -39,46 +41,26 @@ private:
     Callback m_callback;
 };
 
-class CoreConnection : public QObject {   
+//class CoreProcess : public UnfairLock {
+//public:
+//    CoreProcess();
+//signals:
+//private:
+//    std::shared_ptr<QProcess> m_process;
+//};
+
+class CoreConnection : public QObject {
     Q_OBJECT
 public:
-    //using CoreQueue = boost::lockfree::spsc_queue<QJsonObject, boost::lockfree::capacity<1024>>;
     //using CoreQueue = boost::lockfree::spsc_queue<QJsonObject, boost::lockfree::capacity<1024>>;
 
     explicit CoreConnection(QObject *parent = nullptr);
     ~CoreConnection();
     void init();
 
-    enum NotificationType {
-        Notification_Update = 0,
-        Notification_ScrollTo,
-        Notification_DefStyle,
-        Notification_PluginStarted,
-        Notification_PluginStopped,
-        Notification_AvailableThemes,
-        Notification_ThemeChanged,
-        Notification_AvailablePlugins,
-        Notification_UpdateCmds,
-        Notification_ConfigChanged,
-        Notification_Alert,
-        Notification_Unknown,
-    };
-    static NotificationType notification(QString name);
-
-    enum OpsType {
-        Ops_Invalidate = 0,
-        Ops_Ins,
-        Ops_Copy,
-        Ops_Update,
-        Ops_Skip,
-        Ops_Unknown,
-    };
-    static OpsType ops(QString name);
-
 private:
     void startCorePipeThread();
 
-    // protocal
 public:
     void sendNotification(const QString &method, const QJsonObject &params);
     void sendRequest(const QString &method, const QJsonObject &params, const ResponseHandler &handler);
@@ -111,21 +93,18 @@ private:
     void handleNotification(const QJsonObject &json);
     void sendJson(const QJsonObject &json);
 
-    // protocal
 signals:
     void updateReceived(const QString &viewId, const QJsonObject &update);
     void scrollReceived(const QString &viewId, int line, int column);
     void defineStyleReceived(const QJsonObject &params);
     void pluginStartedReceived(const QString &viewId, const QString &pluginName);
     void pluginStoppedReceived(const QString &viewId, const QString &pluginName);
-    void availableThemesReceived(const QVector<QString> &themes);
-    void themeChangedReceived(const Theme &theme);
-    void availablePluginsReceived(const QString &viewId, const QVector<QJsonObject> &plugins);
-    void updateCommandsReceived(const QString &viewId, const QVector<QString> &commands);
+    void availableThemesReceived(const QStringList &themes);
+    void themeChangedReceived(const QString &name, const QJsonObject &json);
+    void availablePluginsReceived(const QString &viewId, const QList<QJsonObject> &plugins);
+    void updateCommandsReceived(const QString &viewId, const QStringList &commands);
     void configChangedReceived(const QString &viewId, const QJsonObject &changes);
     void alertReceived(const QString &text);
-
-    void RpcResponseReady(const QJsonObject &result);
 
 public slots:
     //void stdoutReceivedHandler(const QByteArray &buf);
@@ -136,7 +115,6 @@ private:
     QMutex m_proMutex;
 
     //std::shared_ptr<boost::lockfree::queue<QJsonObject>> m_queue;
-    //std::shared_ptr<boost::lockfree::spsc_queue<QJsonObject, boost::lockfree::capacity<1024>>> m_queue;
     //std::shared_ptr<CoreQueue> m_queue;
     QHash<qint64, ResponseHandler> m_pending;
     qint64 m_rpcIndex;
@@ -209,11 +187,11 @@ private:
 class WriteCoreStdinThread : public QThread {
     Q_OBJECT
 public:
-    //WriteCoreStdinThread(const std::shared_ptr<QProcess> &process, const std::shared_ptr<CoreConnection::CoreQueue> &queue) {
-    //    setObjectName("WriteCoreStdinThread");
-    //    m_process = process;
-    //    m_queue = queue;
-    //}
+ /*   WriteCoreStdinThread(const std::shared_ptr<QProcess> &process, const std::shared_ptr<CoreConnection::CoreQueue> &queue) {
+        setObjectName("WriteCoreStdinThread");
+        m_process = process;
+        m_queue = queue;
+    }*/
     void run() override;
 
 signals:

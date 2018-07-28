@@ -7,7 +7,7 @@
 namespace xi {
 
 using Item = QPair<QKeySequence, QShortcut *>;
-using Bundle = QVector<Item>;
+using Bundle = QList<Item>;
 using Seq = QMap<QWidget *, Bundle>;
 
 static Seq sequences;
@@ -15,12 +15,12 @@ static Seq sequences;
 Shortcuts::~Shortcuts() {
 }
 
-Shortcuts *Shortcuts::instance() {
+Shortcuts *Shortcuts::shared() {
     static Shortcuts instance;
     return &instance;
 }
 
-void Shortcuts::append(QWidget *widget, const QKeySequence &seq, CallbackType callback) {
+void Shortcuts::append(QWidget *widget, const QKeySequence &seq, Callback callback) {
     auto shortcut = new QShortcut(seq, widget);
     if (callback) callback(shortcut);
     auto &bundle = sequences[widget];
@@ -36,7 +36,7 @@ void Shortcuts::erase(QWidget *widget) {
 }
 
 HasShortcuts::~HasShortcuts() {
-    Shortcuts::instance()->erase(m_toErase);
+    Shortcuts::shared()->erase(m_toErase);
 }
 
 } // namespace xi

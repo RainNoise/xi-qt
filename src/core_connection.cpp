@@ -2,10 +2,8 @@
 
 #include <QFuture>
 #include <QtGlobal>
-
-//! Startup and communication with the xi core thread.
-//! TODO
-//! 1. multi thread, queue, async
+#include <QThreadPool>
+#include <QtConcurrent>
 
 namespace xi {
 
@@ -60,9 +58,24 @@ void CoreConnection::startCorePipeThread() {
     //writeThread->start();
 }
 
-static QHash<QString, CoreConnection::NotificationType> notificationMap;
+enum NotificationType {
+    Notification_Update = 0,
+    Notification_ScrollTo,
+    Notification_DefStyle,
+    Notification_PluginStarted,
+    Notification_PluginStopped,
+    Notification_AvailableThemes,
+    Notification_ThemeChanged,
+    Notification_AvailablePlugins,
+    Notification_UpdateCmds,
+    Notification_ConfigChanged,
+    Notification_Alert,
+    Notification_Unknown,
+};
 
-CoreConnection::NotificationType CoreConnection::notification(QString name) {
+static QHash<QString, NotificationType> notificationMap;
+
+static NotificationType to_notification(QString name) {
     if (notificationMap.size() == 0) {
         notificationMap["update"] = Notification_Update;
         notificationMap["scroll_to"] = Notification_ScrollTo;
@@ -77,19 +90,6 @@ CoreConnection::NotificationType CoreConnection::notification(QString name) {
         notificationMap["alert"] = Notification_Alert;
     }
     return notificationMap.value(name, Notification_Unknown);
-}
-
-static QHash<QString, CoreConnection::OpsType> opsMap;
-
-CoreConnection::OpsType CoreConnection::ops(QString name) {
-    if (opsMap.size() == 0) {
-        opsMap["invalidate"] = Ops_Invalidate;
-        opsMap["ins"] = Ops_Ins;
-        opsMap["copy"] = Ops_Copy;
-        opsMap["update"] = Ops_Update;
-        opsMap["skip"] = Ops_Skip;
-    }
-    return opsMap.value(name, Ops_Unknown);
 }
 
 void CoreConnection::sendNotification(const QString &method, const QJsonObject &params) {
@@ -347,7 +347,7 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
     QJsonObject params = json["params"].toObject(); // QJsonObject
     auto viewIdentifier = params["view_id"].toString();
 
-    switch (notification(method)) {
+    switch (to_notification(method)) {
     case Notification_Update: {
         auto update = params["update"].toObject();
         emit updateReceived(viewIdentifier, update);
@@ -369,7 +369,7 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
         emit pluginStoppedReceived(viewIdentifier, name);
     } break;
     case Notification_AvailableThemes: {
-        QVector<QString> themes;
+        QStringList themes;
         QJsonArray array = params["themes"].toArray();
         foreach (const QJsonValue &v, array) {
             themes.push_front(v.toString());
@@ -378,12 +378,11 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
     } break;
     case Notification_ThemeChanged: {
         auto name = params["name"].toString();
-        auto themeObj = params["theme"].toObject();
-        auto theme = Theme(name, themeObj);
-        emit themeChangedReceived(theme);
+        auto theme = params["theme"].toObject();
+        emit themeChangedReceived(name, theme);
     } break;
     case Notification_AvailablePlugins: {
-        QVector<QJsonObject> plugins;
+        QList<QJsonObject> plugins;
         QJsonArray array = params["plugins"].toArray();
         foreach (const QJsonValue &v, array) {
             plugins.push_front(v.toObject());
@@ -392,7 +391,7 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
     } break;
     case Notification_UpdateCmds: {
         //auto plugin = params["plugin"].toString();
-        //QVector<QJsonObject> cmds;
+        //QList<QJsonObject> cmds;
         //QJsonArray array = params["cmds"].toArray();
         //foreach (const QJsonValue &v, array) {
         //    cmds.push_front(v.toObject());
@@ -418,6 +417,13 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
 void CoreConnection::sendJson(const QJsonObject &json) {
     qDebug() << "sendJson--->core";
     qDebug() << json;
+
+    //QtConcurrent::run(QThreadPool::globalInstance(), [=]() {        
+    //    QJsonDocument doc(json);
+    //    QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
+    //    m_process->write(stream.toUtf8());
+    //    m_process->waitForBytesWritten(); // async
+    //});
 
     //m_queue->bounded_push(json);
     //m_queue->push(json);
@@ -449,24 +455,25 @@ ResponseHandler &ResponseHandler::operator=(const ResponseHandler &handler) {
 }
 
 void WriteCoreStdinThread::run() {
-    while (1) {
-        //if (m_process && m_process->isWritable() && m_queue && !m_queue->empty()) {
-        //if (!m_queue->empty()) {
-        //    QJsonObject json;
-        //    if (m_queue->pop(json)) {
-        //        QJsonDocument doc(json);
-        //        QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
-        //        if (-1 == m_process->write(stream.toUtf8())) {
-        //            qFatal("process write error");
-        //        } else {
-        //            //int msecs = 30000
-        //            // TODO: FIX ASSERT ERROR
-        //            m_process->waitForBytesWritten();
-        //        }
-        //    }
-        //}
-        msleep(1);
-    }
+    //while (1) {
+    //    if (m_process && m_process->state() == QProcess::Running && m_queue && !m_queue->empty()) {
+    //    //if (!m_queue->empty()) {
+    //        QJsonObject json;
+    //        if (m_queue->pop(json)) {
+    //            QJsonDocument doc(json);
+    //            QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
+    //            if (-1 == m_process->write(stream.toUtf8())) {
+    //                qFatal("process write error");
+    //            } else {
+    //                //int msecs = 30000
+    //                // TODO: FIX ASSERT ERROR
+    //                m_process->waitForBytesWritten();
+    //                //m_process->closeWriteChannel();
+    //            }
+    //        }
+    //    }
+    //    msleep(1);
+    //}
 }
 
 void ReadCoreStdoutThread::run() {

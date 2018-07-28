@@ -7,6 +7,8 @@
 #include <QJsonObject>
 #include <QString>
 
+#include "unfair_lock.h"
+
 namespace xi {
 
 struct ThemeElement {
@@ -59,19 +61,36 @@ struct ThemeElement {
     void TypeName(const ThemeElement &element) { m_elements[#TypeName] = element; } \
     ThemeElement TypeName() { return m_elements[#TypeName]; }
 
-class Theme {
-public:
-    static Theme defaultTheme();
+#define THEME_LOCKED_METHOD(TypeName)                                          \
+    void TypeName(const ThemeElement &element) { m_inner->TypeName(element); } \
+    ThemeElement TypeName() { return m_inner->TypeName(); }
 
-    Theme();
-    Theme(const Theme &info);
-    explicit Theme(const QString &name, const QJsonObject &json);
-    Theme &operator=(const Theme &theme);
-    QString name() const {
-        return m_name;
+//class ThemeList {
+//public:
+//    Theme get(const QString &name) {
+//        return m_themes[name];
+//    }
+//    void append(const QString &name, const Theme &theme) {
+//        m_themes[name] = theme;
+//    }
+//    void remove(const QString &name) {
+//    }
+//    bool contains(const QString &name) {
+//        return m_themes.contains(name);
+//    }
+//
+//private:
+//    QHash<QString, Theme> m_themes;
+//};
+
+class ThemeState : public UnfairLock {
+public:
+    ThemeState() {
+
     }
 
-public:
+    void applyUpdate(const QString &name, const QJsonObject &json);
+
     THEME_ELEMENT_METHOD(accent);
     THEME_ELEMENT_METHOD(active_guide);
     THEME_ELEMENT_METHOD(background);
@@ -106,28 +125,77 @@ public:
     THEME_ELEMENT_METHOD(tags_options);
 
 private:
-    void merge(const Theme &info);
+    void merge(const ThemeState &info);
     QString m_name;
     QHash<QString, ThemeElement> m_elements;
 };
 
-class ThemeList {
+class ThemeLocked {
 public:
-    Theme get(const QString &name) {
-        return m_themes[name];
+    ThemeLocked(const std::shared_ptr<ThemeState> &mutex) {
+        m_inner = mutex;
+        m_inner->lock();
     }
-    void append(const QString &name, const Theme &theme) {
-        m_themes[name] = theme;
+    ~ThemeLocked() {
+        m_inner->unlock();
     }
-    void remove(const QString &name) {
 
+    void applyUpdate(const QString &name, const QJsonObject &json) {
+        m_inner->applyUpdate(name, json);
     }
-    bool contains(const QString &name) {
-        return m_themes.contains(name);
+
+    THEME_LOCKED_METHOD(accent);
+    THEME_LOCKED_METHOD(active_guide);
+    THEME_LOCKED_METHOD(background);
+    THEME_LOCKED_METHOD(bracket_contents_foreground);
+    THEME_LOCKED_METHOD(bracket_contents_options);
+    THEME_LOCKED_METHOD(brackets_background);
+    THEME_LOCKED_METHOD(brackets_foreground);
+    THEME_LOCKED_METHOD(brackets_options);
+    THEME_LOCKED_METHOD(caret);
+    THEME_LOCKED_METHOD(find_highlight);
+    THEME_LOCKED_METHOD(find_highlight_foreground);
+    THEME_LOCKED_METHOD(foreground);
+    THEME_LOCKED_METHOD(guide);
+    THEME_LOCKED_METHOD(gutter);
+    THEME_LOCKED_METHOD(gutter_foreground);
+    THEME_LOCKED_METHOD(highlight);
+    THEME_LOCKED_METHOD(highlight_foreground);
+    THEME_LOCKED_METHOD(inactive_selection);
+    THEME_LOCKED_METHOD(inactive_selection_foreground);
+    THEME_LOCKED_METHOD(line_highlight);
+    THEME_LOCKED_METHOD(minimap_border);
+    THEME_LOCKED_METHOD(misspelling);
+    THEME_LOCKED_METHOD(phantom_css);
+    THEME_LOCKED_METHOD(popup_css);
+    THEME_LOCKED_METHOD(selection);
+    THEME_LOCKED_METHOD(selection_background);
+    THEME_LOCKED_METHOD(selection_border);
+    THEME_LOCKED_METHOD(selection_foreground);
+    THEME_LOCKED_METHOD(shadow);
+    THEME_LOCKED_METHOD(stack_guide);
+    THEME_LOCKED_METHOD(tags_foreground);
+    THEME_LOCKED_METHOD(tags_options);
+
+private:
+    std::shared_ptr<ThemeState> m_inner;
+};
+
+class Theme {
+public:
+    Theme() {
+        m_state = std::make_shared<ThemeState>();
+    }
+    explicit Theme(const std::shared_ptr<ThemeState> &state) {
+        m_state = state;
+    }
+
+    std::shared_ptr<ThemeLocked> locked() {
+        return std::make_shared<ThemeLocked>(m_state);
     }
 
 private:
-    QHash<QString, Theme> m_themes;
+    std::shared_ptr<ThemeState> m_state;
 };
 
 } // namespace xi

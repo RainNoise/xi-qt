@@ -42,13 +42,13 @@ const char *names[] = {
     "tags_options",                  // Controls certain options when the caret is next to a tag. Only applied when the match_tags setting is set to true.
 };
 
-Theme Theme::defaultTheme() {
-    Theme theme;
-    theme.foreground(QColor::fromRgb(255, 215, 0));
-    theme.background(Qt::black);
-    theme.caret(QColor::fromRgb(220, 220, 220));
-    return theme;
-}
+//Theme Theme::defaultTheme() {
+//    Theme theme;
+//    theme.foreground(QColor::fromRgb(255, 215, 0));
+//    theme.background(Qt::black);
+//    theme.caret(QColor::fromRgb(220, 220, 220));
+//    return theme;
+//}
 
 QColor to_color(const QJsonObject &json) {
     auto a = json["a"].toInt();
@@ -58,7 +58,7 @@ QColor to_color(const QJsonObject &json) {
     return QColor(r, g, b, a);
 }
 
-Theme::Theme(const QString &name, const QJsonObject &json) {
+void ThemeState::applyUpdate(const QString &name, const QJsonObject &json) {
     m_name = name;
     for (auto i = 0; i < std::size(names); ++i) {
         QString name = names[i];
@@ -91,22 +91,7 @@ Theme::Theme(const QString &name, const QJsonObject &json) {
     //merge(defaultTheme());
 }
 
-Theme::Theme(const Theme &info) {
-    *this = info;
-}
-
-Theme::Theme() {
-}
-
-Theme &Theme::operator=(const Theme &theme) {
-    if (this != &theme) {
-        m_name = theme.m_name;
-        m_elements = theme.m_elements;
-    }
-    return *this;
-}
-
-void Theme::merge(const Theme &info) {
+void ThemeState::merge(const ThemeState &info) {
     for (auto i = 0; i < std::size(names); ++i) {
         auto &element = m_elements[names[i]];
         if (element.type == ThemeElement::Null) {

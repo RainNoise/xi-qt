@@ -3,6 +3,7 @@
 
 #include <QColor>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QString>
 #include <QVector>
 
@@ -21,7 +22,7 @@ public:
     StyleSpan();
     StyleSpan(StyleIdentifier style, RangeI range);
 
-    static std::shared_ptr<QVector<StyleSpan>> styles(const QJsonArray &object, const QString &text);
+    static std::shared_ptr<QList<StyleSpan>> styles(const QJsonArray &object, const QString &text);
 
     StyleIdentifier style() const {
         return m_style;

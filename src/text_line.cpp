@@ -9,7 +9,7 @@ TextLine::TextLine(const QString &text, const std::shared_ptr<Font> &font) {
     m_width = 0;
     m_fontMetrics = std::make_unique<QFontMetricsF>(font->getFont());
     m_layout = std::make_shared<QTextLayout>(text, font->getFont());
-    m_selRanges = std::make_shared<QVector<SelRange>>();
+    m_selRanges = std::make_shared<QList<SelRange>>();
 }
 
 int TextLine::xToIndex(qreal x) {

@@ -10,15 +10,15 @@
 namespace xi {
 
 class Shortcuts {
-    using CallbackType = std::function<void(QShortcut *)>;
+    using Callback = std::function<void(QShortcut *)>;
 
 public:
     Shortcuts(const Shortcuts &other) = delete;
     Shortcuts &operator=(const Shortcuts &other) = delete;
     ~Shortcuts();
 
-    static Shortcuts *instance();
-    void append(QWidget *parent, const QKeySequence &seq, CallbackType callback);
+    static Shortcuts *shared();
+    void append(QWidget *parent, const QKeySequence &seq, Callback callback);
     void erase(QWidget *widget);
 
 private:

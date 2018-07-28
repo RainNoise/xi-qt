@@ -8,12 +8,12 @@ Trace *Trace::shared() {
 }
 
 bool Trace::isEnabled() {
-    UnfairLocker locker(m_mutex);
+    QMutexLocker locker(&m_mutex);
     return m_enabled;
 }
 
 void Trace::setEnabled(bool enabled) {
-    UnfairLocker locker(m_mutex);
+    QMutexLocker locker(&m_mutex);
     m_enabled = enabled;
     m_n_entries = 0;
 }
@@ -26,7 +26,7 @@ void Trace::trace(const QString &name, TraceCategory cat, TracePhase ph) {
     // https://stackoverflow.com/questions/19555121/how-to-get-current-timestamp-in-milliseconds-since-1970-just-the-way-java-gets
     auto timestamp = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
 
-    UnfairLocker locker(m_mutex);
+    QMutexLocker locker(&m_mutex);
     if (!m_enabled) return;
     auto i = m_n_entries % BUF_SIZE;
     m_buf->at(i).name = name;
@@ -40,7 +40,7 @@ void Trace::trace(const QString &name, TraceCategory cat, TracePhase ph) {
 }
 
 QJsonDocument Trace::json() {
-    UnfairLocker locker(m_mutex);
+    QMutexLocker locker(&m_mutex);
     auto pid = QCoreApplication::applicationPid();
 
     QJsonArray arr;

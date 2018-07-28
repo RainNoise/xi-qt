@@ -87,7 +87,7 @@ public:
     std::shared_ptr<QFontMetricsF> metrics() const {
         return m_fontMetrics;
     }
-    std::shared_ptr<QVector<SelRange>> selRanges() const {
+    std::shared_ptr<QList<SelRange>> selRanges() const {
         return m_selRanges;
     }
 
@@ -96,10 +96,10 @@ protected:
     QString m_text;
     qreal m_width;
 
-    std::shared_ptr<QVector<StyleSpan>> m_styles;
+    std::shared_ptr<QList<StyleSpan>> m_styles;
     std::shared_ptr<QFontMetricsF> m_fontMetrics;
     std::shared_ptr<QTextLayout> m_layout;
-    std::shared_ptr<QVector<SelRange>> m_selRanges;
+    std::shared_ptr<QList<SelRange>> m_selRanges;
 };
 
 class TextLineBuilder {
@@ -154,13 +154,13 @@ private:
     QColor m_defaultFgColor;
 
     // TODO: MULTI FONTS
-    //QVector<std::shared_ptr<Font>> m_fonts;
+    //QList<std::shared_ptr<Font>> m_fonts;
 
-    QVector<std::shared_ptr<FontSpan>> m_fontSpans;
-    QVector<std::shared_ptr<ColorSpan>> m_fgSpans;
-    QVector<std::shared_ptr<ColorSpan>> m_selSpans;
-    QVector<std::shared_ptr<SimpleSpan>> m_fakeItalicSpans;
-    QVector<std::shared_ptr<UnderlineSpan>> m_underlineSpans;
+    QList<std::shared_ptr<FontSpan>> m_fontSpans;
+    QList<std::shared_ptr<ColorSpan>> m_fgSpans;
+    QList<std::shared_ptr<ColorSpan>> m_selSpans;
+    QList<std::shared_ptr<SimpleSpan>> m_fakeItalicSpans;
+    QList<std::shared_ptr<UnderlineSpan>> m_underlineSpans;
 };
 
 class Painter {

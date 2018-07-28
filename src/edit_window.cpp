@@ -2,6 +2,8 @@
 #include <QMessageBox>
 #include <QShortcut>
 #include <QTabBar>
+#include <QtConcurrent>
+#include <QThreadPool>
 
 #include <string>
 
@@ -159,7 +161,7 @@ void EditWindow::keyPressEvent(QKeyEvent *e) {
 void EditWindow::setupShortcuts() {
     {
         auto seq = QKeySequence("Ctrl+O");
-        Shortcuts::instance()->append(this, seq, [&](QShortcut *shortcut) {
+        Shortcuts::shared()->append(this, seq, [&](QShortcut *shortcut) {
             shortcut->setContext(Qt::WidgetWithChildrenShortcut);
             connect(shortcut, &QShortcut::activated,
                     this, &EditWindow::newTabWithOpenFile);
@@ -167,7 +169,7 @@ void EditWindow::setupShortcuts() {
     }
     {
         auto seq = QKeySequence("Ctrl+N");
-        Shortcuts::instance()->append(this, seq, [&](QShortcut *shortcut) {
+        Shortcuts::shared()->append(this, seq, [&](QShortcut *shortcut) {
             shortcut->setContext(Qt::WidgetWithChildrenShortcut);
             connect(shortcut, &QShortcut::activated,
                     this, &EditWindow::newTab);
@@ -175,7 +177,7 @@ void EditWindow::setupShortcuts() {
     }
     {
         auto seq = QKeySequence("Ctrl+W");
-        Shortcuts::instance()->append(this, seq, [&](QShortcut *shortcut) {
+        Shortcuts::shared()->append(this, seq, [&](QShortcut *shortcut) {
             shortcut->setContext(Qt::WidgetWithChildrenShortcut);
             connect(shortcut, &QShortcut::activated,
                     this, &EditWindow::closeCurrentTab);
@@ -183,7 +185,7 @@ void EditWindow::setupShortcuts() {
     }
     {
         auto seq = QKeySequence("Ctrl+S");
-        Shortcuts::instance()->append(this, seq, [&](QShortcut *shortcut) {
+        Shortcuts::shared()->append(this, seq, [&](QShortcut *shortcut) {
             shortcut->setContext(Qt::WidgetWithChildrenShortcut);
             connect(shortcut, &QShortcut::activated,
                     this, &EditWindow::saveCurrentTab);
@@ -203,7 +205,6 @@ void EditWindow::setupCoreHandler() {
     connect(m_connection.get(), &CoreConnection::availableThemesReceived, this, &EditWindow::availableThemesHandler);
     connect(m_connection.get(), &CoreConnection::themeChangedReceived, this, &EditWindow::themeChangedHandler);
     connect(m_connection.get(), &CoreConnection::alertReceived, this, &EditWindow::alertHandler);
-    connect(m_connection.get(), &CoreConnection::RpcResponseReady, this, &EditWindow::rpcResponseFinishHandler);
 }
 
 void EditWindow::newTabWithOpenFile() {
@@ -243,64 +244,42 @@ void EditWindow::pluginStartedHandler(const QString &viewId, const QString &plug
 void EditWindow::pluginStoppedHandler(const QString &viewId, const QString &pluginName) {
 }
 
-void EditWindow::availablePluginsHandler(const QString &viewId, const QVector<QJsonObject> &plugins) {
+void EditWindow::availablePluginsHandler(const QString &viewId, const QList<QJsonObject> &plugins) {
 }
 
-void EditWindow::updateCommandsHandler(const QString &viewId, const QVector<QString> &commands) {
+void EditWindow::updateCommandsHandler(const QString &viewId, const QStringList &commands) {
 }
 
 void EditWindow::configChangedHandler(const QString &viewId, const QJsonObject &changes) {
 }
 
 void EditWindow::defineStyleHandler(const QJsonObject &json) {
-    // TODO ASYNC
-    //auto styleMap = Perference::shared()->styleMap();
-    //styleMap->defStyle(json);
-
-    auto styleMap = Perference::shared()->styleMap();
-    styleMap.defStyle(json);
-    Perference::shared()->setStyleMap(styleMap);
+    QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+        Perference::shared()->styleMap()->locked()->defStyle(json);
+    });
 }
 
-void EditWindow::availableThemesHandler(const QVector<QString> &themes) {
+void EditWindow::availableThemesHandler(const QStringList &themes) {
 }
 
-void EditWindow::themeChangedHandler(const Theme &theme) {
-    Perference::shared()->setTheme(theme);
-    auto i = m_router.constBegin();
-    while (i != m_router.constEnd()) {
-        auto viewId = i.key();
-        auto view = dynamic_cast<EditView *>(i.value());
-        if (view) view->themeChangedHandler();
-        ++i;
-    }
+void EditWindow::themeChangedHandler(const QString &name, const QJsonObject &json) {
+    QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+        qDebug() << "themeChangedHandler";
+        Perference::shared()->theme()->locked()->applyUpdate(name, json);
+        auto i = m_router.constBegin();
+        while (i != m_router.constEnd()) {
+            auto viewId = i.key();
+            auto view = dynamic_cast<EditView *>(i.value());
+            if (view) view->themeChangedHandler();
+            ++i;
+        }
+    });
 }
 
 void EditWindow::alertHandler(const QString &text) {
     QMessageBox msgBox;
     msgBox.setText(text);
     msgBox.exec();
-}
-
-void EditWindow::rpcResponseFinishHandler(const QJsonObject &json) {
-    QString viewId = json["result"].toString();
-    auto i = json["emit"].toObject();
-    if (i["method"].toString() == "NewViewId") {
-        QString filePath = i["value"].toString();
-        auto file = std::make_shared<File>();
-        file->setPath(filePath);
-        file->setViewId(viewId);
-        EditView *view = new EditView(file, this->m_connection, this);
-        auto newIdx = this->appendViewTab(file, view);
-        if (newIdx == -1) {
-            qDebug() << "insert tab failed";
-            delete view;
-        } else {
-            this->m_router[viewId] = view;
-            setCurrentIndex(newIdx);
-            view->focusOnEdit();
-        }
-    }
 }
 
 } // namespace xi

@@ -46,6 +46,12 @@ EditView::EditView(const std::shared_ptr<File> &file, const std::shared_ptr<Core
 
     connect(m_scrollBarV, &QScrollBar::valueChanged, this, &EditView::scrollBarVChanged);
     connect(m_scrollBarH, &QScrollBar::valueChanged, this, &EditView::scrollBarHChanged);
+
+    //QFile qss(":/resources/qss/scroll_bar.qss");  // :/resources/icons/xi-editor.ico
+    //qss.open(QFile::ReadOnly);
+    //auto scrollBarStyle = qss.readAll();
+    //m_scrollBarV->setStyleSheet(scrollBarStyle);
+    //m_scrollBarH->setStyleSheet(scrollBarStyle);
 }
 
 void EditView::updateHandler(const QJsonObject &json) {
@@ -82,12 +88,15 @@ void EditView::scrollHandler(int line, int column) {
         auto value = m_scrollBarH->value();
         m_scrollBarH->setValue(value + delta); //
     }
+    if (m_content) {
+        m_content->scrollHandler(line, column);
+    }
 }
 
 void EditView::themeChangedHandler() {
-    // auto theme = Perference::shared()->theme();
-    // nothing
-    // scrollbar
+    //Scrollbar
+    //Content
+    m_content->themeChangedHandler();
 }
 
 void EditView::resizeEvent(QResizeEvent *event) {

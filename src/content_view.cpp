@@ -3,18 +3,23 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QMimeData>
+#include <QThreadPool>
+#include <QtConcurrent>
 
 #include "perference.h"
 
 namespace xi {
 
-ContentView::ContentView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent) : 
+ContentView::ContentView(
+    const std::shared_ptr<File> &file,
+    const std::shared_ptr<CoreConnection> &connection,
+    QWidget *parent)
+    :
 #ifdef ENABLE_GPU_RENDERING
-QOpenGLWidget(parent) {
+      QOpenGLWidget(parent) {
 #else
-QWidget(parent) {
+      QWidget(parent) {
 #endif
-    //setAttribute(Qt::WA_OpaquePaintEvent);
     setAttribute(Qt::WA_KeyCompression, false);
     setAttribute(Qt::WA_KeyboardFocusChange);
     setAttribute(Qt::WA_InputMethodEnabled, true);
@@ -27,12 +32,12 @@ QWidget(parent) {
     m_dataSource = std::make_shared<DataSource>();
     {
         QString family = "Inconsolata";
-        int size = 12; // 1920x1080
+        int size = 14;              // 1920x1080
         int weight = QFont::Normal; // OpenType weight value
         bool italic = false;
         QFont font(family, size, weight, italic);
         // PreferQuality PreferDefault PreferAntialias
-        font.setStyleHint(QFont::Monospace, QFont::StyleStrategy(QFont::PreferDefault | QFont::ForceIntegerMetrics)); 
+        font.setStyleHint(QFont::Monospace, QFont::StyleStrategy(QFont::PreferQuality | QFont::ForceIntegerMetrics));
         font.setFixedPitch(true);
         font.setKerning(false);
         m_dataSource->defaultFont = std::make_shared<Font>(font);
@@ -47,6 +52,8 @@ QWidget(parent) {
     m_padding.setTop(0);
     m_padding.setRight(0);
     m_padding.setBottom(0);
+
+    m_asyncPaintTimer = std::make_unique<AsyncPaintTimer>(this);
 
     initSelectCommand();
 }
@@ -63,8 +70,10 @@ bool ContentView::event(QEvent *e) {
     return QOpenGLWidget::event(e);
 #else
     return QWidget::event(e);
-#endif    
+#endif
 }
+
+//static int times = 1;
 
 void ContentView::paintEvent(QPaintEvent *event) {
 
@@ -79,6 +88,12 @@ void ContentView::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     auto dirtyRect = event->rect(); //simple
     paint(painter, dirtyRect);
+    //if (times == 1) {
+    //    painter.fillRect(rect(), Qt::black);
+    //    times--;
+    //} else {
+    //    return;
+    //}
 #endif
 }
 
@@ -95,8 +110,7 @@ void ContentView::resizeEvent(QResizeEvent *event) {
     QOpenGLWidget::resizeEvent(event);
 #else
     QWidget::resizeEvent(event);
-#endif   
-    
+#endif
 }
 
 void ContentView::sendEdit(const QString &method) {
@@ -121,48 +135,52 @@ ClosedRangeI ContentView::getFirstLastVisibleLines(const QRect &bound) {
 
 void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
 
-    auto theme = Perference::shared()->theme();
+    auto theme = Perference::shared()->theme()->locked();
 
     // for debug
     //renderer.drawRect(rect());
-
-     //renderer.fillRect(rect(), theme.background());
-    renderer.fillRect(rect(), Qt::black);
 
     //m_scrollOrigin.setY(-40);	// down
     //m_scrollOrigin.setY(285);	// up
     //renderer.fillRect(dirtyRect, QColor(0x272822));  // bg color
 
     // request cache
-
+    auto lineCache = m_dataSource->lines->locked();
     auto linespace = m_dataSource->fontMetrics->height();
     auto topPad = linespace - m_dataSource->fontMetrics->ascent();
     auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
     auto yOff = topPad - m_scrollOrigin.y();
 
     auto firstVisible = qMax(0, (int)(std::ceil((dirtyRect.y() - topPad + m_scrollOrigin.y()) / linespace)));
-    auto lastVisible = qMax(0, (int)(std::floor((dirtyRect.y() + dirtyRect.height() - topPad + m_scrollOrigin.y()) / linespace)));
+    auto lastVisible = qMax(0, (int)(std::ceil((dirtyRect.y() + dirtyRect.height() - topPad + m_scrollOrigin.y()) / linespace)));
 
-    auto lineCache = m_dataSource->lines;
     auto totalLines = lineCache->height();
 
     auto first = qMin(totalLines, firstVisible);
     auto last = qMin(totalLines, lastVisible);
 
-    auto lines = lineCache->getLines(RangeI(first, last + 1)); // fix
+    auto fetchRange = RangeI(first, last);
+    auto lines = lineCache->blockingGet(fetchRange); // fix
+
+    if (lineCache->isMissingLines(lines, fetchRange)) {
+        return;
+    }
 
     auto font = m_dataSource->defaultFont;
     //auto styleMap = m_dataSource->styleMap;
-    auto styleMap = Perference::shared()->styleMap();
-    QVector<std::shared_ptr<TextLine>> textLines;
+    auto styleMap = Perference::shared()->styleMap()->locked();
+    QList<std::shared_ptr<TextLine>> textLines;
 
     m_firstLine = first;
     qreal maxLineWidth = 0;
 
+    // background
+    renderer.fillRect(dirtyRect, theme->background());
+
     // first pass: create TextLine objects and also draw background rects
-    for (auto lineIx = first; lineIx <= last; ++lineIx) {
+    for (auto lineIx = first; lineIx < last; ++lineIx) {
         auto relLineIx = lineIx - first;
-        auto& line = lines[relLineIx];
+        auto &line = lines[relLineIx];
         if (!line) {
             textLines.append(nullptr);
             continue;
@@ -172,14 +190,14 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
             textLines.append(textLine);
         } else {
             auto builder = std::make_shared<TextLineBuilder>(line->getText(), font);
-            builder->setFgColor(theme.foreground());
-            styleMap.applyStyles(builder, line->getStyles(), theme.selection(), theme.highlight());
+            builder->setFgColor(theme->foreground());
+            styleMap->applyStyles(builder, line->getStyles(), theme->selection(), theme->highlight());
             textLine = builder->build();
             textLines.append(textLine);
             line->setAssoc(textLine);
             //auto y0 = yOff + linespace * lineIx;
             //RangeF yRange(y0, y0 + linespace);
-            //Painter::drawLineBg(renderer, textLine, xOff, yRange);        
+            //Painter::drawLineBg(renderer, textLine, xOff, yRange);
         }
         maxLineWidth = std::max(maxLineWidth, textLine->width());
     }
@@ -189,7 +207,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     }
 
     // second pass: draw text & sel background
-    for (auto lineIx = first; lineIx <= last; ++lineIx) {
+    for (auto lineIx = first; lineIx < last; ++lineIx) {
         auto textLine = textLines[lineIx - first];
         if (textLine) {
             auto y = yOff + m_dataSource->fontMetrics->ascent() - linespace + linespace * lineIx;
@@ -207,7 +225,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     //}
 
     // fourth pass: draw carets
-    for (auto lineIx = first; lineIx <= last; ++lineIx) {
+    for (auto lineIx = first; lineIx < last; ++lineIx) {
         auto relLineIx = lineIx - first;
         auto textLine = textLines[relLineIx];
         auto line = lines[relLineIx];
@@ -216,7 +234,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
             auto cursors = line->getCursor().get();
             foreach (int cursor, *cursors) {
                 auto x0 = xOff + textLine->indexTox(cursor) - 0.5f;
-                Painter::drawCursor(renderer, x0, y0, 2, linespace, theme.caret());
+                Painter::drawCursor(renderer, x0, y0, 2, linespace, theme->caret());
             }
         }
     }
@@ -322,7 +340,8 @@ int ContentView::getLine(int y) {
 }
 
 int ContentView::getColumn(int line, int x) {
-    auto cacheLine = m_dataSource->lines->getLine(line);
+    auto lineCache = m_dataSource->lines->locked();
+    auto cacheLine = lineCache->get(line);
     if (!cacheLine) return -1;
     auto textline = std::make_shared<TextLine>(cacheLine->getText(), m_dataSource->defaultFont);
     return textline->xToIndex(x);
@@ -346,12 +365,12 @@ qreal ContentView::getLineColumnWidth(int line, int column) {
         auto viewRect = rect();
         auto fl = getFirstLastVisibleLines(viewRect);
 
-        auto lineCache = m_dataSource->lines;
+        auto lineCache = m_dataSource->lines->locked();
         auto totalLines = lineCache->height();
 
         auto first = qMin(totalLines, fl.first());
         auto last = qMin(totalLines, fl.last());
-        auto lines = lineCache->getLines(RangeI(first, last + 1)); // fix
+        auto lines = lineCache->blockingGet(RangeI(first, last + 1)); // fix
 
         auto font = m_dataSource->defaultFont;
         auto xline = lines[line - first];
@@ -393,7 +412,7 @@ LineColumn ContentView::posToLineColumn(const QPoint &pos) {
     auto firstVisible = std::max(0, (int)(std::ceil((viewRect.y() - topPad + m_scrollOrigin.y()) / linespace)));
     auto lastVisible = std::max(0, (int)(std::floor((viewRect.y() + viewRect.height() - topPad + m_scrollOrigin.y()) / linespace)));
 
-    auto lineCache = m_dataSource->lines;
+    auto lineCache = m_dataSource->lines->locked();
     auto totalLines = lineCache->height();
 
     auto first = std::min(totalLines, firstVisible);
@@ -401,7 +420,7 @@ LineColumn ContentView::posToLineColumn(const QPoint &pos) {
 
     LineColumn result(false);
 
-    auto lines = lineCache->getLines(RangeI(first, last + 1)); // fix
+    auto lines = lineCache->blockingGet(RangeI(first, last + 1)); // fix
 
     auto font = m_dataSource->defaultFont;
     auto lineNum = qMax(0, int((pos.y() - topPad) / linespace + first));
@@ -434,23 +453,37 @@ void ContentView::scrollY(int y) {
     first = std::min(lines - 1, first);
     if (m_firstLine != first) {
         m_firstLine = first;
-        m_connection->sendScroll(m_file->viewId(), m_firstLine, m_firstLine + m_visibleLines);
+        RangeI prefetch(qMax(0, m_firstLine - m_visibleLines), qMax(0, qMin(lines, m_firstLine + m_visibleLines * 2)));
+        m_connection->sendScroll(m_file->viewId(), prefetch.start(), prefetch.end());
     }
     m_scrollOrigin.setY(m_firstLine * linespace);
     update();
+    //repaint();
+    //asyncPaint();
 }
 
 void ContentView::scrollX(int x) {
     m_scrollOrigin.setX(x);
+    //repaint();
     update();
+    //asyncPaint();
 }
 
 void ContentView::updateHandler(const QJsonObject &json) {
-    m_dataSource->lines->applyUpdate(json);
-    repaint();
+    QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+        m_dataSource->lines->locked()->applyUpdate(json);
+    });
+    repaint(); // update assoc
+    //std::async(std::launch::async, [&]() {
+    //    m_dataSource->lines->locked()->applyUpdate(json);
+    //});
+    //m_dataSource->lines->locked()->applyUpdate(json);
+    //repaint();
+    //asyncPaint();
 }
 
 void ContentView::scrollHandler(int line, int column) {
+    update();
 }
 
 void ContentView::keyPressEvent(QKeyEvent *ev) {
@@ -658,6 +691,30 @@ void ContentView::paste() {
         m_connection->sendInsert(m_file->viewId(), text);
     } else {
         qWarning() << "unknown clipboard data";
+    }
+}
+
+void ContentView::asyncPaint(int ms /*= 100*/) {
+    using namespace std::chrono;
+    auto timestamp = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
+    m_asyncPaintQueue.enqueue(timestamp);
+}
+
+void ContentView::themeChangedHandler() {
+    update();
+}
+
+AsyncPaintTimer::AsyncPaintTimer(QWidget *parent) {
+    m_timer = std::make_unique<QTimer>(this);
+    m_timer->start(10);
+    connect(m_timer.get(), &QTimer::timeout, this, &AsyncPaintTimer::update);
+    m_contentView = reinterpret_cast<ContentView *>(parent);
+}
+
+void AsyncPaintTimer::update() {
+    if (m_contentView->m_asyncPaintQueue.size() != 0) {
+        m_contentView->update();
+        m_contentView->m_asyncPaintQueue.clear();
     }
 }
 

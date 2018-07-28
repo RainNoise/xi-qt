@@ -25,6 +25,15 @@ private:
     int m_baseLine;
 };
 
+struct FontInfo {
+    QString family;
+    int size = 0;
+    bool underline = false;
+    bool italic = false;
+    int weight = QFont::Normal; // QFont::Normal
+    bool fakeItalic = false;
+};
+
 } // namespace xi
 
 #endif // XIFONT_H

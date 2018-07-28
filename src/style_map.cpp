@@ -7,30 +7,6 @@
 
 namespace xi {
 
-int utf8OffsetToUtf16(const QString &text, int ix) {
-    QString utf16 = text.toUtf8().left(ix);
-    return utf16.length();
-}
-
-std::shared_ptr<QVector<StyleSpan>> StyleSpan::styles(const QJsonArray &json, const QString &text) {
-    auto vss = std::make_shared<QVector<StyleSpan>>();
-    auto ix = 0;
-    for (auto i = 0; i < json.size(); i += 3) {
-        auto start = ix + json.at(i).toInt();
-        auto end = start + json.at(i + 1).toInt();
-        auto style = json.at(i + 2).toInt();       
-        auto startIx = utf8OffsetToUtf16(text, start);
-        auto endIx = utf8OffsetToUtf16(text, end);
-        if (startIx < 0 || endIx < startIx) {
-            qWarning() << "malformed style array for line: " << text << json;
-        } else {
-            vss->append(StyleSpan(style, RangeI(startIx, endIx))); //
-        }
-        ix = end;
-    }
-    return vss;
-}
-
 QColor colorFromArgb(quint32 argb) {
     return QColor::fromRgbF(
         qreal((argb >> 16) & 0xff) * 1.0 / 255,
@@ -39,8 +15,8 @@ QColor colorFromArgb(quint32 argb) {
         qreal((argb >> 24) & 0xff) * 1.0 / 255);
 }
 
-void StyleMap::defStyle(const QJsonObject &json) {
-    auto theme = Perference::shared()->theme();
+void StyleMapState::defStyle(const QJsonObject &json) {
+    auto theme = Perference::shared()->theme()->locked();
     QColor fgColor(QColor::Invalid);
     QColor bgColor(QColor::Invalid);
 
@@ -48,7 +24,7 @@ void StyleMap::defStyle(const QJsonObject &json) {
     if (json.contains("fg_color")) {
         fgColor = colorFromArgb(json["fg_color"].toVariant().toULongLong());
     } else {
-        fgColor = theme.foreground();
+        fgColor = theme->foreground();
     }
 
     if (json.contains("bg_color")) {
@@ -83,6 +59,61 @@ void StyleMap::defStyle(const QJsonObject &json) {
     } else {
         m_styles[styleId] = style;
     }
+}
+
+void StyleMapState::applyStyle(const std::shared_ptr<TextLineBuilder> &builder, int id, const RangeI &range, const QColor &selColor) {
+    // BUG: m_styles is NULL;
+    if (id > m_styles.count()) {
+        qWarning() << "stylemap can't resolve" << id;
+        return;
+    }
+    if (id == 0 || id == 1) {
+        builder->addSelSpan(range, selColor);
+    } else {
+        auto style = m_styles[id];
+        if (!style) return;
+
+        if (style->m_fgColor.isValid()) {
+            builder->addFgSpan(range, style->m_fgColor);
+        }
+        //if (style->m_font) {
+        //    // ?
+        //}
+        builder->addFontSpan(range, style->m_info);
+
+        if (style->m_fakeItalic) {
+            builder->addFakeItalicSpan(range);
+        }
+        if (style->m_underline) {
+            builder->addUnderlineSpan(range, UnderlineStyle::single);
+        }
+    }
+}
+
+void StyleMapState::applyStyles(const std::shared_ptr<TextLineBuilder> &builder, std::shared_ptr<QList<StyleSpan>> styles, const QColor &selColor, const QColor &highlightColor) {
+    foreach (StyleSpan ss, *styles) {
+        QColor color;
+        auto id = ss.style();
+        switch (id) {
+        case 0:
+            color = selColor;
+            break;
+        case 1:
+            color = highlightColor;
+            break;
+        default:
+            color = QColor(QColor::Invalid);
+            break;
+        }
+        applyStyle(builder, id, ss.range(), color);
+    }
+}
+
+StyleMapState &StyleMapState::operator=(const StyleMapState &styleMap) {
+    if (this != &styleMap) {
+        m_styles = styleMap.m_styles;
+    }
+    return *this;
 }
 
 } // namespace xi

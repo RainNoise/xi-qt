@@ -54,7 +54,7 @@ public:
     QJsonDocument snapshot();
 
 private:
-    UnfairLock m_mutex;
+    QMutex m_mutex;
     const int BUF_SIZE = 100'000;
     std::unique_ptr<std::vector<TraceEntry>> m_buf;
     int m_n_entries = 0;

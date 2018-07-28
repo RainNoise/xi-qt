@@ -12,15 +12,10 @@
 
 namespace xi {
 
-struct FontInfo {
-    bool underline = false;
-    bool italic = false;
-    int  weight = QFont::Normal; // QFont::Normal
-    bool fakeItalic = false;
-};
+int utf8OffsetToUtf16(const QString &text, int ix);
 
 class Style {
-    friend class StyleMap;
+    friend class StyleMapState;
 
 public:
     //Style(const std::shared_ptr<Font> &font, const QColor &fgColor, 
