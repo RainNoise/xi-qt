@@ -22,6 +22,8 @@ ContentView::ContentView(
 #else
       QWidget(parent) {
 #endif
+    setAttribute(Qt::WA_OpaquePaintEvent);
+    setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_KeyCompression, false);
     setAttribute(Qt::WA_KeyboardFocusChange);
     setAttribute(Qt::WA_InputMethodEnabled, true);
