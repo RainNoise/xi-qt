@@ -15,13 +15,16 @@
 #include <QObject>
 #include <QProcess>
 #include <QString>
+#include <QStringList>
 #include <QTextStream>
 #include <QThread>
 #include <QVector>
-#include <QStringList>
 
-//#include "boost/lockfree/queue.hpp"
-//#include "boost/lockfree/spsc_queue.hpp"
+//#define ENABLE_IO_THREADS
+
+#ifdef ENABLE_IO_THREADS
+#include "boost/lockfree/spsc_queue.hpp"
+#endif
 
 #include "theme.h"
 #include "unfair_lock.h"
@@ -41,18 +44,12 @@ private:
     Callback m_callback;
 };
 
-//class CoreProcess : public UnfairLock {
-//public:
-//    CoreProcess();
-//signals:
-//private:
-//    std::shared_ptr<QProcess> m_process;
-//};
-
 class CoreConnection : public QObject {
     Q_OBJECT
 public:
-    //using CoreQueue = boost::lockfree::spsc_queue<QJsonObject, boost::lockfree::capacity<1024>>;
+#ifdef ENABLE_IO_THREADS
+    using CoreQueue = boost::lockfree::spsc_queue<QJsonObject, boost::lockfree::capacity<1024>>;
+#endif
 
     explicit CoreConnection(QObject *parent = nullptr);
     ~CoreConnection();
@@ -106,125 +103,62 @@ signals:
     void configChangedReceived(const QString &viewId, const QJsonObject &changes);
     void alertReceived(const QString &text);
 
+    void jsonQueued();
+
 public slots:
-    //void stdoutReceivedHandler(const QByteArray &buf);
     void stdoutReceivedHandler();
+    void stderrReceivedHandler();
 
 private:
     std::shared_ptr<QProcess> m_process;
-    QMutex m_proMutex;
 
-    //std::shared_ptr<boost::lockfree::queue<QJsonObject>> m_queue;
-    //std::shared_ptr<CoreQueue> m_queue;
     QHash<qint64, ResponseHandler> m_pending;
     qint64 m_rpcIndex;
     std::shared_ptr<QBuffer> m_recvBuf;
-    QThread *m_readThread;
+
+#ifdef ENABLE_IO_THREADS
+    std::shared_ptr<CoreQueue> m_writeQueue;
+    QThread m_readCoreThread;
+    QThread m_writeCoreThread;
+#endif
 };
 
-class ReadCoreStdoutObject : public QObject {
+#ifdef ENABLE_IO_THREADS
+class WriteCoreWorker : public QObject {
     Q_OBJECT
 public:
-    ReadCoreStdoutObject(const std::shared_ptr<QProcess> &process, CoreConnection *connection) {
-        setObjectName("ReadCoreStdoutObject");
-        m_process = process;
-        m_connection = connection;
-        // connect(m_process.get(), &QProcess::readyReadStandardOutput, m_connection, &CoreConnection::stdoutReceivedHandler);
-        //AutoConnection,
-        //    DirectConnection,
-        //    QueuedConnection,
-        //    BlockingQueuedConnection,
-        //    UniqueConnection = 0x80
-        //connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &ReadCoreStdoutThread::stdoutReceivedHandler, Qt::UniqueConnection);
-    }
-    //void run();
-
-signals:
-    //void resultReady(QByteArray);
-
-public slots:
-    void stdoutReceivedHandler();
-
-private:
-    //std::shared_ptr<CoreConnection> m_connection;
-    CoreConnection *m_connection;
-    std::shared_ptr<QProcess> m_process;
-    //QBuffer m_readBuffer;
-};
-
-class ReadCoreStdoutThread : public QThread {
-    Q_OBJECT
-public:
-    ReadCoreStdoutThread(const std::shared_ptr<QProcess> &process, CoreConnection *connection) {
-        setObjectName("ReadCoreStdoutThread");
-        m_process = process;
-        m_connection = connection;
-        // connect(m_process.get(), &QProcess::readyReadStandardOutput, m_connection, &CoreConnection::stdoutReceivedHandler);
-        //AutoConnection,
-        //    DirectConnection,
-        //    QueuedConnection,
-        //    BlockingQueuedConnection,
-        //    UniqueConnection = 0x80
-        //readyReadStandardOutput
-        connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &ReadCoreStdoutThread::stdoutReceivedHandler, Qt::QueuedConnection);
-    }
-    void run() override;
-
-signals:
-    //void resultReady(QByteArray);
-
-public slots:
-    void stdoutReceivedHandler();
-
-private:
-    //std::shared_ptr<CoreConnection> m_connection;
-    CoreConnection *m_connection;
-    std::shared_ptr<QProcess> m_process;
-    bool m_msg = false;
-    //QBuffer m_readBuffer;
-};
-
-class WriteCoreStdinThread : public QThread {
-    Q_OBJECT
-public:
- /*   WriteCoreStdinThread(const std::shared_ptr<QProcess> &process, const std::shared_ptr<CoreConnection::CoreQueue> &queue) {
-        setObjectName("WriteCoreStdinThread");
+    WriteCoreWorker(const std::shared_ptr<QProcess> &process, const std::shared_ptr<CoreConnection::CoreQueue> &queue) {
+        setObjectName("WriteCoreWorker");
         m_process = process;
         m_queue = queue;
-    }*/
-    void run() override;
+    }
 
-signals:
-    //void resultReady(QByteArray);
-
-public slots:
+    void doWork();
 
 private:
     std::shared_ptr<QProcess> m_process;
-    //std::shared_ptr<CoreConnection::CoreQueue> m_queue;
+    std::shared_ptr<CoreConnection::CoreQueue> m_queue;
 };
 
-//class WriteCoreStdinThread : public QThread {
-//    Q_OBJECT
-//public:
-//    WriteCoreStdinThread(CoreConnection* coreConnection) {
-//        setObjectName("WriteCoreStdinThread");
-//        m_coreConnection = coreConnection;
-//        //m_process = core;
-//        //m_queue = queue;
-//    }
-//    void run() override;
-//
-//signals:
-//    //void resultReady(QByteArray);
-//
-//public slots:
-//
-//private:
-//    CoreConnection *m_coreConnection;
-//    //std::shared_ptr<QProcess> m_process;
-//    //std::shared_ptr<CoreConnection::CoreQueueType> m_queue;
-//};
+class ReadCoreWorker : public QObject {
+    Q_OBJECT
+public:
+    ReadCoreWorker(const std::shared_ptr<QProcess> &process, const std::shared_ptr<CoreConnection::CoreQueue> &queue, CoreConnection *connection) {
+        setObjectName("WriteCoreWorker");
+        m_process = process;
+        m_queue = queue;
+        m_connection = connection;
+        connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &ReadCoreWorker::doWork);
+    }
+
+    void doWork();
+
+private:
+    CoreConnection *m_connection;
+    std::shared_ptr<QProcess> m_process;
+    std::shared_ptr<CoreConnection::CoreQueue> m_queue;
+};
+#endif
 
 } // namespace xi
 

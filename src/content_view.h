@@ -133,7 +133,6 @@ public:
     LineColumn posToLineColumn(const QPoint &pos);
     ClosedRangeI getVisibleLinesRange(const QRect &bound);
 
-    // TODO. FAST SCROLL LOOOONG FILE
     void asyncPaint(int ms = 100);
 
     void scrollY(int y);
@@ -191,10 +190,10 @@ public:
     void paste();
 
 signals:    
-    void updateContentReceived();
+    void repaintContentReceived();
 
 public slots:
-    void updateContentHandler();
+    void repaintContentHandler();
 
 public:
     void updateHandler(const QJsonObject &update);

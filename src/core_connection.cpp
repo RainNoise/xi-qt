@@ -1,61 +1,59 @@
 #include "core_connection.h"
 
 #include <QFuture>
-#include <QtGlobal>
 #include <QThreadPool>
 #include <QtConcurrent>
+#include <QtGlobal>
 
 namespace xi {
-
-//CoreConnection::CoreQueue g_queue;
 
 CoreConnection::CoreConnection(QObject *parent) : QObject(parent) {
     m_rpcIndex = 0;
 }
 
 CoreConnection::~CoreConnection() {
+#ifdef ENABLE_IO_THREADS
+    m_writeCoreThread.quit();
+    m_writeCoreThread.wait();
+    m_readCoreThread.quit();
+    m_readCoreThread.wait();
+#endif
 }
 
 void CoreConnection::init() {
     m_recvBuf = std::make_unique<QBuffer>();
     m_recvBuf->open(QBuffer::ReadWrite);
 
-    //m_queue = std::make_shared<boost::lockfree::queue<QJsonObject>>();
-    //m_queue = std::make_shared<CoreQueue>();
-
     m_process.reset(new QProcess, [](QProcess *p) { p->close(); delete p; });
     //m_process->setProcessChannelMode(QProcess::MergedChannels);
 
-    // QObject::connect: Parentheses expected, signal xi::ReadXiCoreThread::finished in e:\sw5cc\newxi\xi-qt\src\coreconnection.cpp:59
+#ifdef ENABLE_IO_THREADS
+    m_writeQueue = std::make_shared<CoreQueue>();
     startCorePipeThread();
-    //connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &CoreConnection::stdoutReceivedHandler);
+#else
+    connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &CoreConnection::stdoutReceivedHandler);
+    connect(m_process.get(), &QProcess::readyReadStandardError, this, &CoreConnection::stderrReceivedHandler);
+#endif
 
     m_process->start("xi-core");
     m_process->waitForStarted();
 }
 
 void CoreConnection::startCorePipeThread() {
-    ReadCoreStdoutThread *readThread = new ReadCoreStdoutThread(m_process, this);
-    //connect(readThread, &ReadCoreStdoutThread::resultReady, this, &CoreConnection::stdoutReceivedHandler);
-    connect(readThread, &ReadCoreStdoutThread::finished, readThread, &ReadCoreStdoutThread::deleteLater);
-    readThread->start();
+#ifdef ENABLE_IO_THREADS
+    ReadCoreWorker *readWorker = new ReadCoreWorker(m_process, m_writeQueue, this);
+    m_readCoreThread.setObjectName("ReadCoreWorker");
+    readWorker->moveToThread(&m_readCoreThread);
+    connect(&m_readCoreThread, &QThread::finished, readWorker, &QObject::deleteLater);
+    m_readCoreThread.start();
 
-    //QThread thread;
-    //ReadCoreStdoutObject readObject(m_process, this);
-    //readObject.moveToThread(&thread);
-    //connect(m_process.get(), &QProcess::readyReadStandardOutput, &readObject, &ReadCoreStdoutObject::stdoutReceivedHandler);
-    //thread.start();
-
-    //m_readThread = new QThread();
-    //ReadCoreStdoutObject readObject(m_process, this);
-    //readObject.moveToThread(m_readThread);
-    //connect(m_process.get(), &QProcess::readyReadStandardOutput, &readObject, &ReadCoreStdoutObject::stdoutReceivedHandler);
-    //m_readThread->start();
-
-    //WriteCoreStdinThread *writeThread = new WriteCoreStdinThread(m_process, m_queue);
-    ////WriteCoreStdinThread *writeThread = new WriteCoreStdinThread(this);
-    //connect(writeThread, &WriteCoreStdinThread::finished, writeThread, &WriteCoreStdinThread::deleteLater);
-    //writeThread->start();
+    WriteCoreWorker *wirteWorker = new WriteCoreWorker(m_process, m_writeQueue);
+    m_writeCoreThread.setObjectName("WriteCoreWorker");
+    wirteWorker->moveToThread(&m_writeCoreThread);
+    connect(&m_writeCoreThread, &QThread::finished, wirteWorker, &QObject::deleteLater);
+    connect(this, &CoreConnection::jsonQueued, wirteWorker, &WriteCoreWorker::doWork, Qt::QueuedConnection);
+    m_writeCoreThread.start();
+#endif
 }
 
 enum NotificationType {
@@ -235,23 +233,7 @@ void CoreConnection::sendFindPrevious(const QString &viewId, bool wrapAround) {
     sendEdit(viewId, "find_previous", object);
 }
 
-//void CoreConnection::stdoutReceivedHandler(const QByteArray &threadBuf) {
-//	/// thread
-//
-//	auto list = threadBuf.split('\n');
-//	list.removeLast(); //empty
-//
-//	foreach(auto &bytesline, list) {
-//		qDebug() << bytesline;
-//		handleRaw(bytesline);
-//	}
-//}
-
-// readAllStandardOutput
-// "Usage of click is deprecated; use do_gesture\n"
 void CoreConnection::stdoutReceivedHandler() {
-    qDebug() << "core--->stdoutReceivedHandler";
-
     if (m_process->canReadLine()) {
         auto &buf = m_recvBuf->buffer();
         do {
@@ -261,51 +243,47 @@ void CoreConnection::stdoutReceivedHandler() {
             } else {
                 if (buf.size() != 0) {
                     auto newLine = buf + line;
-                    qDebug() << newLine;
                     handleRaw(newLine);
                     buf.clear();
                 } else {
-                    qDebug() << line;
                     handleRaw(line);
                 }
             }
         } while (m_process->bytesAvailable());
     } else {
         auto &buf = m_recvBuf->buffer();
-
         buf.append(m_process->readAll());
         if (buf.size() == 0) {
             return;
         }
-
         auto list = buf.split('\n');
         list.removeLast(); //empty
-
         // loaded
         if (list.isEmpty()) {
             return;
         }
-
         if (buf.at(buf.size() - 1) != '\n') {
             buf = list.last();
             list.removeLast(); //?
         } else {
             buf.clear();
         }
-
         foreach (auto &bytesline, list) {
-            qDebug() << bytesline;
             handleRaw(bytesline);
         }
     }
 }
 
-// Bytes to json
+void CoreConnection::stderrReceivedHandler() {
+    // "loaded xi-syntect-plugin\n"
+    //qWarning() << "malformed json " << bytes;
+}
+
 void CoreConnection::handleRaw(const QByteArray &bytes) {
+    qDebug() << "--->client" << bytes;
     auto doc = QJsonDocument::fromJson(bytes);
     if (doc.isNull()) {
-        // "loaded xi-syntect-plugin\n"
-        qWarning() << "malformed json " << bytes;
+        qFatal("malformed json %s", bytes);
         return;
     }
     auto json = doc.object();
@@ -414,24 +392,20 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
 }
 
 void CoreConnection::sendJson(const QJsonObject &json) {
-    qDebug() << "sendJson--->core";
-    qDebug() << json;
+    qDebug() << "--->core" << json;
 
-    //QtConcurrent::run(QThreadPool::globalInstance(), [=]() {        
-    //    QJsonDocument doc(json);
-    //    QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
-    //    m_process->write(stream.toUtf8());
-    //    m_process->waitForBytesWritten(); // async
-    //});
-
-    //m_queue->bounded_push(json);
-    //m_queue->push(json);
-    //g_queue.push(json);
-
+#ifdef ENABLE_IO_THREADS
+    m_writeQueue->push(json);
+    emit jsonQueued();
+#else
     QJsonDocument doc(json);
     QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
-    m_process->write(stream.toUtf8());
-    m_process->waitForBytesWritten(); // async
+    if (-1 == m_process->write(stream.toUtf8())) {
+        qFatal("process write error");
+    } else {
+        m_process->waitForBytesWritten();
+    }
+#endif
 }
 
 ResponseHandler::ResponseHandler(Callback callback /*= nullptr*/) {
@@ -453,60 +427,29 @@ ResponseHandler &ResponseHandler::operator=(const ResponseHandler &handler) {
     return *this;
 }
 
-void WriteCoreStdinThread::run() {
-    //while (1) {
-    //    if (m_process && m_process->state() == QProcess::Running && m_queue && !m_queue->empty()) {
-    //    //if (!m_queue->empty()) {
-    //        QJsonObject json;
-    //        if (m_queue->pop(json)) {
-    //            QJsonDocument doc(json);
-    //            QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
-    //            if (-1 == m_process->write(stream.toUtf8())) {
-    //                qFatal("process write error");
-    //            } else {
-    //                //int msecs = 30000
-    //                // TODO: FIX ASSERT ERROR
-    //                m_process->waitForBytesWritten();
-    //                //m_process->closeWriteChannel();
-    //            }
-    //        }
-    //    }
-    //    msleep(1);
-    //}
+#ifdef ENABLE_IO_THREADS
+void WriteCoreWorker::doWork() {
+    while (1) {
+        if (m_process && m_process->state() == QProcess::Running && m_queue && !m_queue->empty()) {
+            QJsonObject json;
+            if (m_queue->pop(json)) {
+                QJsonDocument doc(json);
+                QString stream(doc.toJson(QJsonDocument::Compact) + '\n');
+                if (-1 == m_process->write(stream.toUtf8())) {
+                    qFatal("process write error");
+                } else {
+                    m_process->waitForBytesWritten();
+                }
+            }
+        } else {
+            break;
+        }
+    }
 }
 
-void ReadCoreStdoutThread::run() {
-    //while (1) {
-    //if (!m_process) break;
-    //if (m_process->canReadLine()) {
-    //    auto line = m_process->readLine();
-    //    emit resultReady(line);
-    //}
-    //if (m_core->bytesAvailable() > 0) {
-    //	auto buf = m_readBuffer.buffer();
-    //	auto bytes = m_core->readAll();
-    //	for (auto b : bytes) {
-    //		buf.append(b);
-    //		if (b == '\n') {
-    //			QByteArray line(buf);
-    //			buf.clear();
-    //			emit resultReady(line);
-    //		}
-    //	}
-    //}
-    //msleep(1);
-    //}
-    exec();
+void ReadCoreWorker::doWork() {
+    m_connection->stdoutReceivedHandler();
 }
-
-void ReadCoreStdoutThread::stdoutReceivedHandler() {
-    if (m_connection)
-        m_connection->stdoutReceivedHandler();
-}
-
-void ReadCoreStdoutObject::stdoutReceivedHandler() {
-    if (m_connection)
-        m_connection->stdoutReceivedHandler();
-}
+#endif
 
 } // namespace xi

@@ -19,6 +19,7 @@ static const char *UNTITLED_NAME = "untitled";
 
 EditWindow::EditWindow(QWidget *parent) : QTabWidget(parent) {
     setupShortcuts();
+    connect(this, &EditWindow::newViewIdRecevied, this, &EditWindow::newViewIdHandler);
 }
 
 void EditWindow::init(const std::shared_ptr<CoreConnection> &connection) {
@@ -36,21 +37,9 @@ void EditWindow::openFile(const QString &viewId, const QString &filePath) {
         return;
     }
     ResponseHandler handler([=](const QJsonObject &result) {
-        qDebug() << "sendNewView ResponseHandler";
-        auto file = std::make_shared<File>();
+        //qDebug() << "sendNewView ResponseHandler";
         auto newViewId = result["result"].toString();
-        file->setPath(filePath);
-        file->setViewId(newViewId);
-        EditView *view = new EditView(file, this->m_connection, this);
-        auto newIdx = this->appendViewTab(file, view);
-        if (newIdx == -1) {
-            qDebug() << "insert tab failed";
-            delete view;
-        } else {
-            this->m_router[newViewId] = view;
-            setCurrentIndex(newIdx);
-            view->focusOnEdit();
-        }
+        emit newViewIdRecevied(newViewId, filePath);
     });
     m_connection->sendNewView(filePath, handler);
 }
@@ -272,7 +261,7 @@ void EditWindow::availableThemesHandler(const QStringList &themes) {
 
 void EditWindow::themeChangedHandler(const QString &name, const QJsonObject &json) {
     QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
-        qDebug() << "themeChangedHandler";
+        //qDebug() << "themeChangedHandler";
         Perference::shared()->theme()->locked()->applyUpdate(name, json);
         auto i = m_router.constBegin();
         while (i != m_router.constEnd()) {
@@ -288,6 +277,22 @@ void EditWindow::alertHandler(const QString &text) {
     QMessageBox msgBox;
     msgBox.setText(text);
     msgBox.exec();
+}
+
+void EditWindow::newViewIdHandler(const QString &newViewId, const QString &filePath) {
+    auto file = std::make_shared<File>();
+    file->setPath(filePath);
+    file->setViewId(newViewId);
+    EditView *view = new EditView(file, this->m_connection, this);
+    auto newIdx = this->appendViewTab(file, view);
+    if (newIdx == -1) {
+        qDebug() << "insert tab failed";
+        delete view;
+    } else {
+        this->m_router[newViewId] = view;
+        setCurrentIndex(newIdx);
+        view->focusOnEdit();
+    }
 }
 
 } // namespace xi

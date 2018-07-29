@@ -48,6 +48,7 @@ protected:
     virtual void keyPressEvent(QKeyEvent *e) override;
 
 signals:
+    void newViewIdRecevied(const QString &viewId, const QString &file);
 
 public slots:
     void updateHandler(const QString &viewId, const QJsonObject &update);
@@ -61,6 +62,8 @@ public slots:
     void availableThemesHandler(const QStringList &themes);
     void themeChangedHandler(const QString &name, const QJsonObject &json);
     void alertHandler(const QString &text);
+
+    void newViewIdHandler(const QString &viewId, const QString &file);
 
 private:
     std::shared_ptr<CoreConnection> m_connection;

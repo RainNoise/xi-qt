@@ -100,7 +100,7 @@ InvalSet LineCacheState::applyUpdate(const QJsonObject &json) {
     for (auto opref : ops) {
         auto op = opref.toObject();
         auto opTypeStr = op["op"].toString();
-        qDebug() << "update--> op type: " << opTypeStr;
+        //qDebug() << "update--> op type: " << opTypeStr;
         auto opType = to_ops(opTypeStr);
         auto n = op["n"].toInt();
         switch (opType) {

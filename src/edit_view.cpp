@@ -22,8 +22,6 @@
 
 namespace xi {
 
-static const int kScrollbarHStep = 100;
-
 EditView::EditView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent) : QWidget(parent) {
 
     setFocusPolicy(Qt::FocusPolicy::NoFocus);

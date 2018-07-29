@@ -7,8 +7,8 @@
 #include <QtConcurrent>
 
 #include "config.h"
-#include "theme.h"
 #include "perference.h"
+#include "theme.h"
 
 namespace xi {
 
@@ -30,6 +30,7 @@ ContentView::ContentView(
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setMouseTracking(true);
+    setAutoFillBackground(false);
 
     m_connection = connection;
     m_file = file;
@@ -46,7 +47,7 @@ ContentView::ContentView(
 
     m_asyncPaintTimer = std::make_unique<AsyncPaintTimer>(this);
 
-    connect(this, &ContentView::updateContentReceived, this, &ContentView::updateContentHandler);
+    connect(this, &ContentView::repaintContentReceived, this, &ContentView::repaintContentHandler);
 
     initSelectCommand();
 }
@@ -184,9 +185,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
         maxLineWidth = std::max(maxLineWidth, textLine->width());
     }
 
-    if (maxLineWidth != m_maxLineWidth) {
-        m_maxLineWidth = maxLineWidth;
-    }
+    m_maxLineWidth = maxLineWidth;
 
     // second pass: draw text & sel background
     for (auto lineIx = first; lineIx < last; ++lineIx) {
@@ -358,7 +357,7 @@ int ContentView::checkPosition(int line, int column) {
     auto delta = getWidth(line, column) - m_scrollOrigin.x();
     if (delta <= 0)
         return -1;
-    else if (delta > width()-getXOff())
+    else if (delta > width() - getXOff())
         return 1;
     else
         return 0;
@@ -370,7 +369,7 @@ LineColumn ContentView::posToLineColumn(const QPoint &pos) {
     auto lineCache = m_dataSource->lines->locked();
     auto totalLines = lineCache->height();
     if (line >= totalLines) {
-        line = totalLines-1;
+        line = totalLines - 1;
         column = lineCache->get(line)->utf8Length();
     }
     return LineColumn(line, column);
@@ -382,47 +381,43 @@ void ContentView::scrollY(int y) {
     auto lines = getLines();
     if (lines == 0) return;
 
-    constexpr auto kMaxPrefetch = 3;
+    constexpr auto kMaxPrefetch = 1;
+    const int kLines = m_visibleLines * kMaxPrefetch;
 
     auto first = std::max(0, (int)(std::floor(value / qreal(linespace) + 0.9))); // last line [visible]
     first = std::min(lines - 1, first);
     if (m_firstLine != first) {
         m_firstLine = first;
-        RangeI prefetch(qMax(0, m_firstLine - m_visibleLines * kMaxPrefetch), qMin(lines, m_firstLine + m_visibleLines * kMaxPrefetch));
+        RangeI prefetch(qMax(0, m_firstLine - kLines), qMin(lines, m_firstLine + m_visibleLines + kLines));
         m_connection->sendScroll(m_file->viewId(), prefetch.start(), prefetch.end());
     }
     m_scrollOrigin.setY(m_firstLine * linespace);
-    //update();
-    repaint();
+    update();
+    //repaint();
     //asyncPaint();
 }
 
 void ContentView::scrollX(int x) {
     m_scrollOrigin.setX(x);
-    repaint();
-    //update();
+    //repaint();
+    update();
     //asyncPaint();
 }
 
 void ContentView::updateHandler(const QJsonObject &json) {
     QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
         m_dataSource->lines->locked()->applyUpdate(json);
-        emit updateContentReceived();
+        emit repaintContentReceived();
     });
-    //repaint(); // update assoc
-    //std::async(std::launch::async, [&]() {
-    //    m_dataSource->lines->locked()->applyUpdate(json);
-    //});
-    //m_dataSource->lines->locked()->applyUpdate(json);
-    //asyncPaint();
+    repaint(); // update assoc
 }
 
 void ContentView::scrollHandler(int line, int column) {
     Q_UNUSED(line);
     Q_UNUSED(column);
 
-    repaint();
-    //update();
+    //repaint();
+    update();
 }
 
 void ContentView::keyPressEvent(QKeyEvent *ev) {
@@ -595,7 +590,7 @@ void ContentView::mouseDoubleClickEvent(QMouseEvent *e) {
     if (lc.isValid()) {
         m_mouseDoubleCheckTimer.setSingleShot(true);
         m_mouseDoubleCheckTimer.start(100);
-        
+
         m_connection->sendGesture(m_file->viewId(), lc.line(), lc.column(), "word_select");
     }
     QWidget::mouseDoubleClickEvent(e);
@@ -609,8 +604,8 @@ void ContentView::insertChar(const QString &text) {
 
 void ContentView::copy() {
     ResponseHandler handler([&](const QJsonObject &json) {
-        qDebug() << "copy ResponseHandler";
-        qDebug() << json;
+        //qDebug() << "copy ResponseHandler";
+        //qDebug() << json;
         QClipboard *clipboard = QApplication::clipboard();
         auto text = json["result"].toString();
         clipboard->setText(text);
@@ -620,8 +615,8 @@ void ContentView::copy() {
 
 void ContentView::cut() {
     ResponseHandler handler([&](const QJsonObject &json) {
-        qDebug() << "cut ResponseHandler";
-        qDebug() << json;
+        //qDebug() << "cut ResponseHandler";
+        //qDebug() << json;
         QClipboard *clipboard = QApplication::clipboard();
         auto text = json["result"].toString();
         clipboard->setText(text);
@@ -651,7 +646,7 @@ void ContentView::asyncPaint(int ms /*= 100*/) {
 
 void ContentView::themeChangedHandler() {
     //repaint();
-    emit updateContentReceived();
+    emit repaintContentReceived();
 }
 
 void ContentView::configChangedHandler(const QJsonObject &changes) {
@@ -660,9 +655,9 @@ void ContentView::configChangedHandler(const QJsonObject &changes) {
     });
 }
 
-void ContentView::updateContentHandler() {
-    //update();
-    repaint();
+void ContentView::repaintContentHandler() {
+    update();
+    //repaint();
 }
 
 AsyncPaintTimer::AsyncPaintTimer(QWidget *parent) {
@@ -679,12 +674,12 @@ void AsyncPaintTimer::update() {
     }
 }
 
- DataSource::DataSource() {
+DataSource::DataSource() {
     lines = std::make_shared<LineCache>();
     config = std::make_shared<Config>();
     {
         QString family = "Inconsolata";
-        int size = 13;              // 1920x1080
+        int size = 14;              // 1920x1080
         int weight = QFont::Normal; // OpenType weight value
         bool italic = false;
         QFont font(family, size, weight, italic);
@@ -696,6 +691,6 @@ void AsyncPaintTimer::update() {
     }
     fontMetrics = std::make_shared<QFontMetricsF>(defaultFont->getFont());
     gutterWidth = 0;
- }
+}
 
 } // namespace xi
