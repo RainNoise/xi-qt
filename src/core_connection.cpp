@@ -322,7 +322,7 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
     }
 
     auto method = json["method"].toString();
-    QJsonObject params = json["params"].toObject(); // QJsonObject
+    auto params = json["params"].toObject();
     auto viewIdentifier = params["view_id"].toString();
 
     switch (to_notification(method)) {
