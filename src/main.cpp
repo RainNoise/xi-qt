@@ -5,13 +5,12 @@
 #include <QSurfaceFormat>
 
 int main(int argc, char *argv[]) {
-    // load config
+    Q_INIT_RESOURCE(xi);
 
     QSurfaceFormat fmt;
     fmt.setSamples(4);
     QSurfaceFormat::setDefaultFormat(fmt);
 
-    // launch exe
     QApplication a(argc, argv);
     xi::XiMainWindow w;
     w.show();

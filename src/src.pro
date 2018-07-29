@@ -83,7 +83,7 @@ DISTFILES += \
     todo.txt
 
 RESOURCES += \
-    xi-qt.qrc
+    xi.qrc
 
 INCLUDEPATH += $$PWD/../third_party/boost/include/boost-1_67
 DEPENDPATH += $$PWD/../third_party/boost/include/boost-1_67

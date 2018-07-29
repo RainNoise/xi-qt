@@ -71,7 +71,6 @@ void ThemeState::applyUpdate(const QString &name, const QJsonObject &json) {
             continue;
         }
         auto value = json[name];
-        auto type = value.type();
         if (value.isNull()) {
             element.type = ThemeElement::Null;
         } else if (value.isString()) {

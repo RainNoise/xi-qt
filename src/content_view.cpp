@@ -682,7 +682,7 @@ void AsyncPaintTimer::update() {
     config = std::make_shared<Config>();
     {
         QString family = "Inconsolata";
-        int size = 14;              // 1920x1080
+        int size = 13;              // 1920x1080
         int weight = QFont::Normal; // OpenType weight value
         bool italic = false;
         QFont font(family, size, weight, italic);
