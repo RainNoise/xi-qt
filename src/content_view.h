@@ -190,9 +190,11 @@ public:
     void cut();
     void paste();
 
-signals:
+signals:    
+    void updateContentReceived();
 
 public slots:
+    void updateContentHandler();
 
 public:
     void updateHandler(const QJsonObject &update);

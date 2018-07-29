@@ -166,7 +166,7 @@ public:
         //    BlockingQueuedConnection,
         //    UniqueConnection = 0x80
         //readyReadStandardOutput
-        connect(m_process.get(), &QProcess::readyRead, this, &ReadCoreStdoutThread::stdoutReceivedHandler, Qt::QueuedConnection);
+        connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &ReadCoreStdoutThread::stdoutReceivedHandler, Qt::QueuedConnection);
     }
     void run() override;
 

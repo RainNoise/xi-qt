@@ -103,13 +103,13 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
     return textline;
 }
 
-void Painter::drawLineBg(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, const RangeF &y) {
-    auto selRanges = line->selRanges();
-    foreach (const SelRange selRange, *selRanges) {
-        QRect rect;
-        selRange.range;
-        painter.fillRect(rect, selRange.color);
-    }
-}
+//void Painter::drawLineBg(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, const RangeF &y) {
+//    auto selRanges = line->selRanges();
+//    foreach (const SelRange selRange, *selRanges) {
+//        QRect rect;
+//        selRange.range;
+//        painter.fillRect(rect, selRange.color);
+//    }
+//}
 
 } // namespace xi

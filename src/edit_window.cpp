@@ -236,15 +236,23 @@ void EditWindow::scrollHandler(const QString &viewId, int line, int column) {
 }
 
 void EditWindow::pluginStartedHandler(const QString &viewId, const QString &pluginName) {
+    Q_UNUSED(viewId);
+    Q_UNUSED(pluginName);
 }
 
 void EditWindow::pluginStoppedHandler(const QString &viewId, const QString &pluginName) {
+    Q_UNUSED(viewId);
+    Q_UNUSED(pluginName);
 }
 
 void EditWindow::availablePluginsHandler(const QString &viewId, const QList<QJsonObject> &plugins) {
+    Q_UNUSED(viewId);
+    Q_UNUSED(plugins);
 }
 
 void EditWindow::updateCommandsHandler(const QString &viewId, const QStringList &commands) {
+    Q_UNUSED(viewId);
+    Q_UNUSED(commands);
 }
 
 void EditWindow::configChangedHandler(const QString &viewId, const QJsonObject &changes) {
@@ -259,6 +267,7 @@ void EditWindow::defineStyleHandler(const QJsonObject &json) {
 }
 
 void EditWindow::availableThemesHandler(const QStringList &themes) {
+    Q_UNUSED(themes);
 }
 
 void EditWindow::themeChangedHandler(const QString &name, const QJsonObject &json) {

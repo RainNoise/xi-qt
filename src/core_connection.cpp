@@ -24,7 +24,7 @@ void CoreConnection::init() {
     //m_queue = std::make_shared<CoreQueue>();
 
     m_process.reset(new QProcess, [](QProcess *p) { p->close(); delete p; });
-    m_process->setProcessChannelMode(QProcess::MergedChannels);
+    //m_process->setProcessChannelMode(QProcess::MergedChannels);
 
     // QObject::connect: Parentheses expected, signal xi::ReadXiCoreThread::finished in e:\sw5cc\newxi\xi-qt\src\coreconnection.cpp:59
     startCorePipeThread();

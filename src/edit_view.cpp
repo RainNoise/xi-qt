@@ -61,7 +61,6 @@ void EditView::updateHandler(const QJsonObject &json) {
 
 void EditView::scrollHandler(int line, int column) {
     auto linespace = m_content->getLinespace();
-    auto lines = m_content->getLines();
     auto value = m_scrollBarV->value();
     auto nextLine = line + 1;
 
@@ -74,12 +73,14 @@ void EditView::scrollHandler(int line, int column) {
         m_scrollBarV->setValue(line * linespace);
     }
 
+    //auto lines = m_content->getLines();
     //auto linecheck = m_content->checkLineVisible(line);
     //if (linecheck != 0) {
     //	auto linespace = m_content->getLineSpace();
     //	auto delta = line * linespace;
     //	m_scrollBarV->setValue(delta); // -m_content->height()
     //}
+
     auto checkResult = m_content->checkPosition(line, column);
     if (checkResult != 0) {
         auto delta = checkResult * m_content->width() / 2.f;
@@ -122,10 +123,10 @@ void EditView::relayoutScrollBar() {
 
     auto maxLineWidth = m_content->getMaxLineWidth();
     auto maxCharWidth = m_content->getMaxCharWidth();
-    auto xOff = m_content->getXOff();
     m_scrollBarH->setRange(0, maxLineWidth);
     m_scrollBarH->setSingleStep(maxCharWidth);
     m_scrollBarH->setPageStep(widgetWidth);
+    //auto xOff = m_content->getXOff();
     //auto visible = (maxLineWidth + xOff + maxCharWidth / 2.f > widgetWidth);
     //if (!visible && m_content->getScrollOrigin().x() != 0) visible = true;
     //m_scrollBarH->setVisible(visible);
@@ -147,7 +148,7 @@ std::shared_ptr<File> EditView::getFile() const {
 
 void EditView::focusOnEdit() {
     m_content->setFocus();
-    m_content->update();
+    //m_content->update();
 }
 
 void EditView::scrollBarVChanged(int y) {

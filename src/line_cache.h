@@ -222,6 +222,7 @@ public:
     }
 
     bool isMissingLines(const CacheLines &lines, const RangeI &range) {
+        Q_UNUSED(range)
         foreach (const std::shared_ptr<Line> &line, lines) {
             if (!line) return true;
         }

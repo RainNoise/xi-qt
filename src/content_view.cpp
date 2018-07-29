@@ -44,6 +44,8 @@ ContentView::ContentView(
 
     m_asyncPaintTimer = std::make_unique<AsyncPaintTimer>(this);
 
+    connect(this, &ContentView::updateContentReceived, this, &ContentView::updateContentHandler);
+
     initSelectCommand();
 }
 
@@ -104,14 +106,13 @@ void ContentView::sendEdit(const QString &method) {
 ClosedRangeI ContentView::getVisibleLinesRange(const QRect &bound) {
     auto linespace = m_dataSource->fontMetrics->height();
     auto topPad = linespace - m_dataSource->fontMetrics->ascent();
-    auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
-    auto yOff = topPad - m_scrollOrigin.y();
+    //auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
+    //auto yOff = topPad - m_scrollOrigin.y();
 
     auto firstVisible = qMax(0, (int)(std::ceil((bound.y() - topPad + m_scrollOrigin.y()) / linespace)));
     auto lastVisible = qMax(0, (int)(std::floor((bound.y() + bound.height() - topPad + m_scrollOrigin.y()) / linespace)));
 
-    ClosedRangeI vlines(firstVisible, lastVisible);
-    return vlines;
+    return ClosedRangeI(firstVisible, lastVisible);
 }
 
 void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
@@ -138,7 +139,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
     auto last = qMin(totalLines, lastVisible);
 
     auto fetchRange = RangeI(first, last);
-    auto lines = lineCache->blockingGet(fetchRange); // fix
+    auto lines = lineCache->blockingGet(fetchRange);
 
     if (lineCache->isMissingLines(lines, fetchRange)) {
         return;
@@ -324,7 +325,7 @@ int ContentView::getColumn(int line, int x) {
     if (!cacheLine) return -1;
     auto textline = cacheLine->assoc();
     if (!textline) return -1;
-    return textline->xToIndex(m_scrollOrigin.x() + getXOff() + x);
+    return textline->xToIndex(m_scrollOrigin.x() + x);
 }
 
 int ContentView::checkLineVisible(int line) {
@@ -404,18 +405,22 @@ void ContentView::scrollX(int x) {
 void ContentView::updateHandler(const QJsonObject &json) {
     QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
         m_dataSource->lines->locked()->applyUpdate(json);
+        emit updateContentReceived();
     });
-    repaint(); // update assoc
+    //repaint(); // update assoc
     //std::async(std::launch::async, [&]() {
     //    m_dataSource->lines->locked()->applyUpdate(json);
     //});
     //m_dataSource->lines->locked()->applyUpdate(json);
-    //repaint();
     //asyncPaint();
 }
 
 void ContentView::scrollHandler(int line, int column) {
+    Q_UNUSED(line);
+    Q_UNUSED(column);
+
     repaint();
+    //update();
 }
 
 void ContentView::keyPressEvent(QKeyEvent *ev) {
@@ -635,19 +640,27 @@ void ContentView::paste() {
 }
 
 void ContentView::asyncPaint(int ms /*= 100*/) {
+    Q_UNUSED(ms);
+
     using namespace std::chrono;
     auto timestamp = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
     m_asyncPaintQueue.enqueue(timestamp);
 }
 
 void ContentView::themeChangedHandler() {
-    repaint();
+    //repaint();
+    emit updateContentReceived();
 }
 
 void ContentView::configChangedHandler(const QJsonObject &changes) {
     QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
         m_dataSource->config->locked()->applyUpdate(changes);
     });
+}
+
+void ContentView::updateContentHandler() {
+    //update();
+    repaint();
 }
 
 AsyncPaintTimer::AsyncPaintTimer(QWidget *parent) {

@@ -79,7 +79,6 @@ public:
 
     qreal width() const {
         return m_width;
-        // return metrics()->width(m_text);
     }
     std::shared_ptr<QTextLayout> layout() const {
         return m_layout;
@@ -165,14 +164,14 @@ private:
 
 class Painter {
 public:
-    static void drawLineBg(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, const RangeF &y);
+    //static void drawLineBg(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, const RangeF &y);
 
     static void drawLine(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, qreal y) {
         line->layout()->draw(&painter, QPoint(x, y));
     }
 
-    static void drawLineDecorations(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, qreal y) {
-    }
+    //static void drawLineDecorations(QPainter &painter, const std::shared_ptr<TextLine> &line, qreal x, qreal y) {
+    //}
 
     static void drawCursor(QPainter &painter, qreal x, qreal y, qreal width, qreal height, const QColor &fg) {
         painter.fillRect(x, y, width, height, fg);
