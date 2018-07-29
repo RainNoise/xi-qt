@@ -234,9 +234,11 @@ void EditWindow::pluginStoppedHandler(const QString &viewId, const QString &plug
     Q_UNUSED(pluginName);
 }
 
-void EditWindow::availablePluginsHandler(const QString &viewId, const QList<QJsonObject> &plugins) {
+void EditWindow::availablePluginsHandler(const QString &viewId, const QJsonObject &plugins) {
     Q_UNUSED(viewId);
     Q_UNUSED(plugins);
+    //auto view = dynamic_cast<EditView *>(m_router[viewId]);
+    //if (view) view->availablePluginsHandler();
 }
 
 void EditWindow::updateCommandsHandler(const QString &viewId, const QStringList &commands) {

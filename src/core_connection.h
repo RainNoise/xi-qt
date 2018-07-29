@@ -20,14 +20,14 @@
 #include <QThread>
 #include <QVector>
 
-//#define ENABLE_IO_THREADS
+#include "theme.h"
+#include "unfair_lock.h"
+
+#define ENABLE_IO_THREADS
 
 #ifdef ENABLE_IO_THREADS
 #include "boost/lockfree/spsc_queue.hpp"
 #endif
-
-#include "theme.h"
-#include "unfair_lock.h"
 
 namespace xi {
 
@@ -98,7 +98,7 @@ signals:
     void pluginStoppedReceived(const QString &viewId, const QString &pluginName);
     void availableThemesReceived(const QStringList &themes);
     void themeChangedReceived(const QString &name, const QJsonObject &json);
-    void availablePluginsReceived(const QString &viewId, const QList<QJsonObject> &plugins);
+    void availablePluginsReceived(const QString &viewId, const QJsonObject &plugins);
     void updateCommandsReceived(const QString &viewId, const QStringList &commands);
     void configChangedReceived(const QString &viewId, const QJsonObject &changes);
     void alertReceived(const QString &text);

@@ -55,7 +55,7 @@ public slots:
     void scrollHandler(const QString &viewId, int line, int column);
     void pluginStartedHandler(const QString &viewId, const QString &pluginName);
     void pluginStoppedHandler(const QString &viewId, const QString &pluginName);
-    void availablePluginsHandler(const QString &viewId, const QList<QJsonObject> &plugins);
+    void availablePluginsHandler(const QString &viewId, const QJsonObject &plugins);
     void updateCommandsHandler(const QString &viewId, const QStringList &commands);
     void configChangedHandler(const QString &viewId, const QJsonObject &changes);
     void defineStyleHandler(const QJsonObject &params);

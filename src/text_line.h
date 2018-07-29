@@ -14,8 +14,6 @@
 #include "range.h"
 #include "style_span.h"
 
-//! TODO: OPENGL
-
 namespace xi {
 
 struct SelRange {

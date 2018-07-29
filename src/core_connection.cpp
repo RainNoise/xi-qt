@@ -360,11 +360,7 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
         emit themeChangedReceived(name, theme);
     } break;
     case Notification_AvailablePlugins: {
-        QList<QJsonObject> plugins;
-        QJsonArray array = params["plugins"].toArray();
-        foreach (const QJsonValue &v, array) {
-            plugins.push_front(v.toObject());
-        }
+        QJsonObject plugins = params["plugins"].toObject();
         emit availablePluginsReceived(viewIdentifier, plugins);
     } break;
     case Notification_UpdateCmds: {
