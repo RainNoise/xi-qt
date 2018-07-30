@@ -23,7 +23,7 @@
 #include "theme.h"
 #include "unfair_lock.h"
 
-#define ENABLE_IO_THREADS
+//#define ENABLE_IO_THREADS
 
 #ifdef ENABLE_IO_THREADS
 #include "boost/lockfree/spsc_queue.hpp"
@@ -46,6 +46,10 @@ private:
 
 class CoreConnection : public QObject {
     Q_OBJECT
+
+    friend class ReadCoreWorker;
+    friend class WriteCoreWorker;
+
 public:
 #ifdef ENABLE_IO_THREADS
     using CoreQueue = boost::lockfree::spsc_queue<QJsonObject, boost::lockfree::capacity<1024>>;
@@ -67,6 +71,7 @@ public:
     void sendClientStarted(const QString &configDir, const QString &clientExtrasDir);
     void sendNewView(const QString &filePath, const ResponseHandler &handler);
     void sendCloseView(const QString &viewId);
+    void sendPaste(const QString &viewId, const QString &chars);
     void sendInsert(const QString &viewId, const QString &chars);
     void sendCopy(const QString &viewId, const ResponseHandler &handler);
     void sendCut(const QString &viewId, const ResponseHandler &handler);
@@ -84,6 +89,7 @@ public:
     // void sendRpcAsync();
 
 private:
+    void handleRawInner(const QByteArray &bytes);
     void handleRaw(const QByteArray &bytes);
     void handleRpc(const QJsonObject &json);
     void handleRequest(const QJsonObject &json);
@@ -111,6 +117,7 @@ public slots:
 
 private:
     std::shared_ptr<QProcess> m_process;
+    QMutex m_processMutex;
 
     QHash<qint64, ResponseHandler> m_pending;
     qint64 m_rpcIndex;
@@ -127,15 +134,17 @@ private:
 class WriteCoreWorker : public QObject {
     Q_OBJECT
 public:
-    WriteCoreWorker(const std::shared_ptr<QProcess> &process, const std::shared_ptr<CoreConnection::CoreQueue> &queue) {
+    WriteCoreWorker(const std::shared_ptr<QProcess> &process, const std::shared_ptr<CoreConnection::CoreQueue> &queue, CoreConnection *connection) {
         setObjectName("WriteCoreWorker");
         m_process = process;
         m_queue = queue;
+        m_connection = connection;
     }
 
     void doWork();
 
 private:
+    CoreConnection *m_connection;
     std::shared_ptr<QProcess> m_process;
     std::shared_ptr<CoreConnection::CoreQueue> m_queue;
 };

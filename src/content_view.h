@@ -121,6 +121,7 @@ public:
     int getContentHeight();
     int getLinespace();
     int getMaxCharWidth();
+    int getAverageCharWidth();
     QPoint getScrollOrigin();
     int getXOff();
 

@@ -25,7 +25,6 @@ void CoreConnection::init() {
     m_recvBuf->open(QBuffer::ReadWrite);
 
     m_process.reset(new QProcess, [](QProcess *p) { p->close(); delete p; });
-    //m_process->setProcessChannelMode(QProcess::MergedChannels);
 
 #ifdef ENABLE_IO_THREADS
     m_writeQueue = std::make_shared<CoreQueue>();
@@ -47,7 +46,7 @@ void CoreConnection::startCorePipeThread() {
     connect(&m_readCoreThread, &QThread::finished, readWorker, &QObject::deleteLater);
     m_readCoreThread.start();
 
-    WriteCoreWorker *wirteWorker = new WriteCoreWorker(m_process, m_writeQueue);
+    WriteCoreWorker *wirteWorker = new WriteCoreWorker(m_process, m_writeQueue, this);
     m_writeCoreThread.setObjectName("WriteCoreWorker");
     wirteWorker->moveToThread(&m_writeCoreThread);
     connect(&m_writeCoreThread, &QThread::finished, wirteWorker, &QObject::deleteLater);
@@ -152,6 +151,12 @@ void CoreConnection::sendCloseView(const QString &viewId) {
     sendNotification("close_view", object);
 }
 
+void CoreConnection::sendPaste(const QString &viewId, const QString &chars) {
+    QJsonObject object;
+    object["chars"] = chars;
+    sendEdit(viewId, "paste", object);
+}
+
 void CoreConnection::sendInsert(const QString &viewId, const QString &chars) {
     QJsonObject object;
     object["chars"] = chars;
@@ -234,43 +239,69 @@ void CoreConnection::sendFindPrevious(const QString &viewId, bool wrapAround) {
 }
 
 void CoreConnection::stdoutReceivedHandler() {
-    if (m_process->canReadLine()) {
-        auto &buf = m_recvBuf->buffer();
-        do {
-            auto line = m_process->readLine();
-            if (!line.endsWith('\n')) {
-                buf.append(line);
-            } else {
-                if (buf.size() != 0) {
-                    auto newLine = buf + line;
-                    handleRaw(newLine);
-                    buf.clear();
-                } else {
-                    handleRaw(line);
-                }
-            }
-        } while (m_process->bytesAvailable());
-    } else {
-        auto &buf = m_recvBuf->buffer();
-        buf.append(m_process->readAll());
-        if (buf.size() == 0) {
+    //if (m_process->canReadLine()) {
+    //    auto &buf = m_recvBuf->buffer();
+    //    do {
+    //        auto line = m_process->readLine();
+    //        if (!line.endsWith('\n')) {
+    //            buf.append(line);
+    //        } else {
+    //            if (buf.size() != 0) {
+    //                auto newLine = buf + line;
+    //                handleRaw(newLine);
+    //                buf.clear();
+    //            } else {
+    //                handleRaw(line);
+    //            }
+    //        }
+    //    } while (m_process->bytesAvailable());
+    //} else
+    {
+        QByteArray newBuf;
+        newBuf = m_recvBuf->readAll();
+        newBuf.append(m_process->readAllStandardOutput());
+        if (newBuf.size() == 0) {
             return;
         }
-        auto list = buf.split('\n');
-        list.removeLast(); //empty
-        // loaded
+        auto list = newBuf.split('\n');
+        list.removeLast();
         if (list.isEmpty()) {
             return;
         }
-        if (buf.at(buf.size() - 1) != '\n') {
-            buf = list.last();
-            list.removeLast(); //?
+
+        if (newBuf.back() != '\n') {
+            newBuf = list.last();
+            list.removeLast();
         } else {
-            buf.clear();
+            newBuf.clear();
         }
+
+        m_recvBuf->buffer() = newBuf;
+
         foreach (auto &bytesline, list) {
             handleRaw(bytesline);
         }
+
+        //auto &buf = m_recvBuf->buffer();
+        //buf.append(m_process->readAllStandardOutput());
+        //if (buf.size() == 0) {
+        //    return;
+        //}
+        //auto list = buf.split('\n');
+        //list.removeLast(); //empty
+        //// loaded
+        //if (list.isEmpty()) {
+        //    return;
+        //}
+        //if (buf.back() != '\n') {
+        //    buf = list.last();
+        //    list.removeLast(); //?
+        //} else {
+        //    buf.clear();
+        //}
+        //foreach (auto &bytesline, list) {
+        //    handleRaw(bytesline);
+        //}
     }
 }
 
@@ -279,7 +310,7 @@ void CoreConnection::stderrReceivedHandler() {
     //qWarning() << "malformed json " << bytes;
 }
 
-void CoreConnection::handleRaw(const QByteArray &bytes) {
+void CoreConnection::handleRawInner(const QByteArray &bytes) {
     qDebug() << "--->client" << bytes;
     auto doc = QJsonDocument::fromJson(bytes);
     if (doc.isNull()) {
@@ -288,6 +319,12 @@ void CoreConnection::handleRaw(const QByteArray &bytes) {
     }
     auto json = doc.object();
     handleRpc(json);
+}
+
+void CoreConnection::handleRaw(const QByteArray &bytes) {
+    //QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+        handleRawInner(bytes);
+    //});
 }
 
 void CoreConnection::handleRpc(const QJsonObject &json) {
@@ -425,6 +462,7 @@ ResponseHandler &ResponseHandler::operator=(const ResponseHandler &handler) {
 
 #ifdef ENABLE_IO_THREADS
 void WriteCoreWorker::doWork() {
+    //QMutexLocker locker(&m_connection->m_processMutex);
     while (1) {
         if (m_process && m_process->state() == QProcess::Running && m_queue && !m_queue->empty()) {
             QJsonObject json;
@@ -444,6 +482,7 @@ void WriteCoreWorker::doWork() {
 }
 
 void ReadCoreWorker::doWork() {
+    //QMutexLocker locker(&m_connection->m_processMutex);
     m_connection->stdoutReceivedHandler();
 }
 #endif

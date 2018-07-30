@@ -20,7 +20,7 @@ enum OpsType {
 
 static QHash<QString, OpsType> opsMap;
 
-static OpsType to_ops(QString name) {
+static OpsType to_ops(const QString &name) {
     if (opsMap.size() == 0) {
         opsMap["invalidate"] = Ops_Invalidate;
         opsMap["ins"] = Ops_Ins;

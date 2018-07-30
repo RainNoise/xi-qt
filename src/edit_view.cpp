@@ -71,14 +71,6 @@ void EditView::scrollHandler(int line, int column) {
         m_scrollBarV->setValue(line * linespace);
     }
 
-    //auto lines = m_content->getLines();
-    //auto linecheck = m_content->checkLineVisible(line);
-    //if (linecheck != 0) {
-    //	auto linespace = m_content->getLineSpace();
-    //	auto delta = line * linespace;
-    //	m_scrollBarV->setValue(delta); // -m_content->height()
-    //}
-
     auto checkResult = m_content->checkPosition(line, column);
     if (checkResult != 0) {
         auto delta = checkResult * m_content->width() / 2.f;

@@ -308,6 +308,10 @@ int ContentView::getMaxCharWidth() {
     return m_dataSource->fontMetrics->maxWidth();
 }
 
+int ContentView::getAverageCharWidth() {
+    return m_dataSource->fontMetrics->averageCharWidth();
+}
+
 QPoint ContentView::getScrollOrigin() {
     return m_scrollOrigin;
 }
@@ -348,13 +352,18 @@ qreal ContentView::getWidth(int lineIx, int columnIx) {
         auto textLine = line->assoc();
         if (textLine) {
             return textLine->indexTox(columnIx);
+        } else {
+            return -1;
         }
     }
     return 0;
 }
 
 int ContentView::checkPosition(int line, int column) {
-    auto delta = getWidth(line, column) - m_scrollOrigin.x();
+    auto lcwidth = getWidth(line, column);
+    if (lcwidth == -1) return 0;
+
+    auto delta = lcwidth - m_scrollOrigin.x();
     if (delta <= 0)
         return -1;
     else if (delta > width() - getXOff())
@@ -392,15 +401,15 @@ void ContentView::scrollY(int y) {
         m_connection->sendScroll(m_file->viewId(), prefetch.start(), prefetch.end());
     }
     m_scrollOrigin.setY(m_firstLine * linespace);
-    update();
-    //repaint();
+    //update();
+    repaint();
     //asyncPaint();
 }
 
 void ContentView::scrollX(int x) {
     m_scrollOrigin.setX(x);
-    //repaint();
-    update();
+    repaint();
+    //update();
     //asyncPaint();
 }
 
@@ -416,8 +425,8 @@ void ContentView::scrollHandler(int line, int column) {
     Q_UNUSED(line);
     Q_UNUSED(column);
 
-    //repaint();
-    update();
+    repaint();
+    //update();
 }
 
 void ContentView::keyPressEvent(QKeyEvent *ev) {
@@ -604,8 +613,6 @@ void ContentView::insertChar(const QString &text) {
 
 void ContentView::copy() {
     ResponseHandler handler([&](const QJsonObject &json) {
-        //qDebug() << "copy ResponseHandler";
-        //qDebug() << json;
         QClipboard *clipboard = QApplication::clipboard();
         auto text = json["result"].toString();
         clipboard->setText(text);
@@ -615,8 +622,6 @@ void ContentView::copy() {
 
 void ContentView::cut() {
     ResponseHandler handler([&](const QJsonObject &json) {
-        //qDebug() << "cut ResponseHandler";
-        //qDebug() << json;
         QClipboard *clipboard = QApplication::clipboard();
         auto text = json["result"].toString();
         clipboard->setText(text);
@@ -625,15 +630,16 @@ void ContentView::cut() {
 }
 
 void ContentView::paste() {
-    const QClipboard *clipboard = QApplication::clipboard();
-    const QMimeData *mimeData = clipboard->mimeData();
-
-    if (mimeData->hasText()) {
-        auto text = mimeData->text();
-        m_connection->sendInsert(m_file->viewId(), text);
-    } else {
-        qWarning() << "unknown clipboard data";
-    }
+    QtConcurrent::run(QThreadPool::globalInstance(), [&]() {
+        const QClipboard *clipboard = QApplication::clipboard();
+        const QMimeData *mimeData = clipboard->mimeData();
+        if (mimeData->hasText()) {
+            auto text = mimeData->text();
+            this->m_connection->sendPaste(this->m_file->viewId(), text);
+        } else {
+            qWarning() << "unknown clipboard data";
+        }
+    });
 }
 
 void ContentView::asyncPaint(int ms /*= 100*/) {
@@ -656,8 +662,8 @@ void ContentView::configChangedHandler(const QJsonObject &changes) {
 }
 
 void ContentView::repaintContentHandler() {
-    update();
-    //repaint();
+    //update();
+    repaint();
 }
 
 AsyncPaintTimer::AsyncPaintTimer(QWidget *parent) {
@@ -679,12 +685,12 @@ DataSource::DataSource() {
     config = std::make_shared<Config>();
     {
         QString family = "Inconsolata";
-        int size = 14;              // 1920x1080
+        int size = 13;              // 1920x1080
         int weight = QFont::Normal; // OpenType weight value
         bool italic = false;
         QFont font(family, size, weight, italic);
         // PreferQuality PreferDefault PreferAntialias
-        font.setStyleHint(QFont::Monospace, QFont::StyleStrategy(QFont::PreferQuality | QFont::ForceIntegerMetrics));
+        font.setStyleHint(QFont::Monospace, QFont::StyleStrategy(QFont::PreferDefault | QFont::ForceIntegerMetrics));
         font.setFixedPitch(true);
         font.setKerning(false);
         defaultFont = std::make_shared<Font>(font);

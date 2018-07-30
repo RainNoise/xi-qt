@@ -40,35 +40,38 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
     foreach (std::shared_ptr<FontSpan> span, m_fontSpans) {
         QTextLayout::FormatRange fmt;
         QTextCharFormat cfmt;
-        cfmt.setFont(m_font->getFont());
-        cfmt.setFontItalic(span->payload.italic);
-        cfmt.setFontWeight(span->payload.weight);
-        fmt.start = span->range.start();
-        fmt.length = span->range.length();
-        fmt.format = cfmt;
-        m_overrides.push_back(fmt);
+        if (span->payload.italic || span->payload.weight) {
+            cfmt.setFontItalic(span->payload.italic);
+            cfmt.setFontWeight(span->payload.weight);
+            fmt.start = span->range.start();
+            fmt.length = span->range.length();
+            fmt.format = cfmt;
+            m_overrides.push_back(fmt);
+        }
     }
     
-    foreach(std::shared_ptr<ColorSpan> span, m_fgSpans) {
+    foreach (std::shared_ptr<ColorSpan> span, m_fgSpans) {
         QTextLayout::FormatRange fmt;
         QTextCharFormat cfmt;
         if (span->payload.isValid()) {
             cfmt.setForeground(span->payload);
+            fmt.start = span->range.start();
+            fmt.length = span->range.length();
+            fmt.format = cfmt;
+            m_overrides.push_back(fmt);
         }
-        fmt.start = span->range.start();
-        fmt.length = span->range.length();
-        fmt.format = cfmt;
-        m_overrides.push_back(fmt);
     }
 
     foreach (std::shared_ptr<ColorSpan> span, m_selSpans) {
         QTextLayout::FormatRange fmt;
         QTextCharFormat cfmt;
-        cfmt.setBackground(span->payload);
-        fmt.start = span->range.start();
-        fmt.length = span->range.length();
-        fmt.format = cfmt;
-        m_overrides.push_back(fmt);
+        if (span->payload.isValid()) {
+            cfmt.setBackground(span->payload);
+            fmt.start = span->range.start();
+            fmt.length = span->range.length();
+            fmt.format = cfmt;
+            m_overrides.push_back(fmt);
+        }
     }
 
     //foreach (std::shared_ptr<UnderlineSpan> span, m_underlineSpans) {
@@ -84,6 +87,7 @@ std::shared_ptr<xi::TextLine> TextLineBuilder::build() {
     //}
 
     qreal height = 0;
+    textline->layout()->setFont(m_font->getFont());
     textline->layout()->setFormats(m_overrides);
     textline->layout()->setCacheEnabled(true);
     textline->layout()->beginLayout();
