@@ -21,7 +21,7 @@
 #include "line_cache.h"
 
 //! TODO: OPENGL VSYNC FPS
-// #define ENABLE_GPU_RENDERING
+//#define ENABLE_GPU_RENDERING
 // #define ENABLE_SHADER
 
 namespace xi {

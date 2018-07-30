@@ -56,6 +56,12 @@ public:
     inline QString getText() const {
         return m_text;
     }
+    inline int utf16Length() const {
+        return m_text.length();
+    }
+    inline int length() const {
+        return utf16Length();
+    }
     inline int utf8Length() const {
         return m_text.toUtf8().length();
     }
