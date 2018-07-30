@@ -239,69 +239,43 @@ void CoreConnection::sendFindPrevious(const QString &viewId, bool wrapAround) {
 }
 
 void CoreConnection::stdoutReceivedHandler() {
-    //if (m_process->canReadLine()) {
-    //    auto &buf = m_recvBuf->buffer();
-    //    do {
-    //        auto line = m_process->readLine();
-    //        if (!line.endsWith('\n')) {
-    //            buf.append(line);
-    //        } else {
-    //            if (buf.size() != 0) {
-    //                auto newLine = buf + line;
-    //                handleRaw(newLine);
-    //                buf.clear();
-    //            } else {
-    //                handleRaw(line);
-    //            }
-    //        }
-    //    } while (m_process->bytesAvailable());
-    //} else
-    {
-        QByteArray newBuf;
-        newBuf = m_recvBuf->readAll();
-        newBuf.append(m_process->readAllStandardOutput());
-        if (newBuf.size() == 0) {
+    if (m_process->canReadLine()) {
+        auto &buf = m_recvBuf->buffer();
+        do {
+            auto line = m_process->readLine();
+            if (!line.endsWith('\n')) {
+                buf.append(line);
+            } else {
+                if (buf.size() != 0) {
+                    auto newLine = buf + line;
+                    handleRaw(newLine);
+                    buf.clear();
+                } else {
+                    handleRaw(line);
+                }
+            }
+        } while (m_process->bytesAvailable());
+    } else {
+        auto &buf = m_recvBuf->buffer();
+        buf.append(m_process->readAllStandardOutput());
+        if (buf.size() == 0) {
             return;
         }
-        auto list = newBuf.split('\n');
-        list.removeLast();
+        auto list = buf.split('\n');
+        list.removeLast(); //empty
+        // loaded
         if (list.isEmpty()) {
             return;
         }
-
-        if (newBuf.back() != '\n') {
-            newBuf = list.last();
-            list.removeLast();
+        if (buf.back() != '\n') {
+            buf = list.last();
+            list.removeLast(); //?
         } else {
-            newBuf.clear();
+            buf.clear();
         }
-
-        m_recvBuf->buffer() = newBuf;
-
         foreach (auto &bytesline, list) {
             handleRaw(bytesline);
         }
-
-        //auto &buf = m_recvBuf->buffer();
-        //buf.append(m_process->readAllStandardOutput());
-        //if (buf.size() == 0) {
-        //    return;
-        //}
-        //auto list = buf.split('\n');
-        //list.removeLast(); //empty
-        //// loaded
-        //if (list.isEmpty()) {
-        //    return;
-        //}
-        //if (buf.back() != '\n') {
-        //    buf = list.last();
-        //    list.removeLast(); //?
-        //} else {
-        //    buf.clear();
-        //}
-        //foreach (auto &bytesline, list) {
-        //    handleRaw(bytesline);
-        //}
     }
 }
 

@@ -23,7 +23,7 @@
 #include "theme.h"
 #include "unfair_lock.h"
 
-//#define ENABLE_IO_THREADS
+#define ENABLE_IO_THREADS
 
 #ifdef ENABLE_IO_THREADS
 #include "boost/lockfree/spsc_queue.hpp"
