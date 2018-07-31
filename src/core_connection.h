@@ -121,7 +121,8 @@ private:
 
     QHash<qint64, ResponseHandler> m_pending;
     qint64 m_rpcIndex;
-    std::shared_ptr<QBuffer> m_recvBuf;
+    std::shared_ptr<QBuffer> m_recvStdoutBuf;
+    std::shared_ptr<QBuffer> m_recvStderrBuf;
 
 #ifdef ENABLE_IO_THREADS
     std::shared_ptr<CoreQueue> m_writeQueue;

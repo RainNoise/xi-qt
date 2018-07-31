@@ -21,8 +21,11 @@ CoreConnection::~CoreConnection() {
 }
 
 void CoreConnection::init() {
-    m_recvBuf = std::make_unique<QBuffer>();
-    m_recvBuf->open(QBuffer::ReadWrite);
+    m_recvStdoutBuf = std::make_unique<QBuffer>();
+    m_recvStdoutBuf->open(QBuffer::ReadWrite);
+
+    m_recvStderrBuf = std::make_unique<QBuffer>();
+    m_recvStderrBuf->open(QBuffer::ReadWrite);
 
     m_process.reset(new QProcess, [](QProcess *p) { p->close(); delete p; });
 
@@ -238,9 +241,29 @@ void CoreConnection::sendFindPrevious(const QString &viewId, bool wrapAround) {
     sendEdit(viewId, "find_previous", object);
 }
 
+QByteArrayList mergeBuffer(const std::shared_ptr<QBuffer> &buffer, const QByteArray &append) {
+    auto &buf = buffer->buffer();
+    buf.append(append);
+    if (buf.size() == 0) {
+        return QByteArrayList();
+    }
+    auto list = buf.split('\n');
+    list.removeLast(); //empty
+    if (list.isEmpty()) {
+        return QByteArrayList();
+    }
+    if (!buf.endsWith('\n')) {
+        buf = list.last();
+        list.removeLast(); //?
+    } else {
+        buf.clear();
+    }
+    return list;
+}
+
 void CoreConnection::stdoutReceivedHandler() {
     if (m_process->canReadLine()) {
-        auto &buf = m_recvBuf->buffer();
+        auto &buf = m_recvStdoutBuf->buffer();
         do {
             auto line = m_process->readLine();
             if (!line.endsWith('\n')) {
@@ -256,23 +279,7 @@ void CoreConnection::stdoutReceivedHandler() {
             }
         } while (m_process->bytesAvailable());
     } else {
-        auto &buf = m_recvBuf->buffer();
-        buf.append(m_process->readAllStandardOutput());
-        if (buf.size() == 0) {
-            return;
-        }
-        auto list = buf.split('\n');
-        list.removeLast(); //empty
-        // loaded
-        if (list.isEmpty()) {
-            return;
-        }
-        if (buf.back() != '\n') {
-            buf = list.last();
-            list.removeLast(); //?
-        } else {
-            buf.clear();
-        }
+        auto list = mergeBuffer(m_recvStdoutBuf, m_process->readAllStandardOutput());
         foreach (auto &bytesline, list) {
             handleRaw(bytesline);
         }
@@ -280,18 +287,20 @@ void CoreConnection::stdoutReceivedHandler() {
 }
 
 void CoreConnection::stderrReceivedHandler() {
-    // "loaded xi-syntect-plugin\n"
-    //qWarning() << "malformed json " << bytes;
+    auto list = mergeBuffer(m_recvStderrBuf, m_process->readAllStandardError());
+    foreach (auto &bytesline, list) {
+        qWarning() << "recv " << bytesline;
+    }
 }
 
 void CoreConnection::handleRawInner(const QByteArray &bytes) {
-    qDebug() << "--->client" << bytes;
     auto doc = QJsonDocument::fromJson(bytes);
     if (doc.isNull()) {
         qFatal("malformed json %s", bytes);
         return;
     }
     auto json = doc.object();
+    qDebug() << "recv " << json;
     handleRpc(json);
 }
 
@@ -399,7 +408,7 @@ void CoreConnection::handleNotification(const QJsonObject &json) {
 }
 
 void CoreConnection::sendJson(const QJsonObject &json) {
-    qDebug() << "--->core" << json;
+    qDebug() << "send " << json;
 
 #ifdef ENABLE_IO_THREADS
     m_writeQueue->push(json);

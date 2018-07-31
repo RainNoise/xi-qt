@@ -8,8 +8,6 @@
 namespace xi {
 
 class UnfairLock {
-    friend class UnfairLocker;
-
 public:
     UnfairLock();
 

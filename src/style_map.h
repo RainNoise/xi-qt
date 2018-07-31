@@ -48,7 +48,7 @@ public:
     }
 
     inline void applyStyles(const std::shared_ptr<TextLineBuilder> &builder,
-                     std::shared_ptr<QList<StyleSpan>> styles,
+                     const std::shared_ptr<QList<StyleSpan>> &styles,
                      const QColor &selColor, const QColor &highlightColor) {
         m_inner->applyStyles(builder, styles, selColor, highlightColor);
     }

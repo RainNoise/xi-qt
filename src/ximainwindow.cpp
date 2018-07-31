@@ -46,8 +46,6 @@ void XiMainWindow::setupCore() {
     m_coreConnection = std::make_shared<CoreConnection>();
     m_coreConnection->init();
 
-    // start core thread;
-
     QString configDir = qEnvironmentVariable(XI_CONFIG_DIR);
     if (configDir.isEmpty())
         configDir = defaultConfigDirectory();
