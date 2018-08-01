@@ -1,5 +1,5 @@
-#ifndef STYLEMAP_H
-#define STYLEMAP_H
+#ifndef STYLE_MAP_H
+#define STYLE_MAP_H
 
 #include <QColor>
 #include <QDebug>
@@ -73,4 +73,4 @@ private:
 
 } // namespace xi
 
-#endif // STYLEMAP_H
+#endif // STYLE_MAP_H

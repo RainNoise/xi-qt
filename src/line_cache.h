@@ -1,5 +1,5 @@
-#ifndef LINECACHE_H
-#define LINECACHE_H
+#ifndef LINE_CACHE_H
+#define LINE_CACHE_H
 
 #include <QJsonArray>
 #include <QList>
@@ -271,4 +271,4 @@ private:
 
 } // namespace xi
 
-#endif // LINECACHE_H
+#endif // LINE_CACHE_H

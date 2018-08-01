@@ -1,5 +1,5 @@
-#ifndef EDITWINDOW_H
-#define EDITWINDOW_H
+#ifndef EDIT_WINDOW_H
+#define EDIT_WINDOW_H
 
 #include <QHash>
 #include <QTabWidget>
@@ -72,4 +72,4 @@ private:
 
 } // namespace xi
 
-#endif // EDITWINDOW_H
+#endif // EDIT_WINDOW_H

@@ -1,5 +1,5 @@
-#ifndef EDITTEXTAREA_H
-#define EDITTEXTAREA_H
+#ifndef EDIT_VIEW_H
+#define EDIT_VIEW_H
 
 #include <QWidget>
 
@@ -55,4 +55,4 @@ private:
 
 } // namespace xi
 
-#endif // EDITTEXTAREA_H
+#endif // EDIT_VIEW_H

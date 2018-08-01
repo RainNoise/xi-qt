@@ -1,5 +1,5 @@
-#ifndef UNFAIRLOCK_H
-#define UNFAIRLOCK_H
+#ifndef UNFAIR_LOCK_H
+#define UNFAIR_LOCK_H
 
 #include <QMutex>
 
@@ -21,4 +21,4 @@ protected:
 
 } // namespace xi
 
-#endif // UNFAIRLOCK_H
+#endif // UNFAIR_LOCK_H

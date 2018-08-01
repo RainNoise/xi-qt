@@ -1,5 +1,5 @@
-#ifndef CORECONNECTION_H
-#define CORECONNECTION_H
+#ifndef CORE_CONNECTION_H
+#define CORE_CONNECTION_H
 
 #include <QBuffer>
 #include <QDateTime>
@@ -172,4 +172,4 @@ private:
 
 } // namespace xi
 
-#endif // CORECONNECTION_H
+#endif // CORE_CONNECTION_H

@@ -1,5 +1,5 @@
-#ifndef TEXTLINE_H
-#define TEXTLINE_H
+#ifndef TEXT_LINE_H
+#define TEXT_LINE_H
 
 #include <QFontMetrics>
 #include <QFontMetricsF>
@@ -178,4 +178,4 @@ public:
 
 } // namespace xi
 
-#endif // TEXTLINE_H
+#endif // TEXT_LINE_H
