@@ -59,23 +59,30 @@ void EditView::updateHandler(const QJsonObject &json) {
 
 void EditView::scrollHandler(int line, int column) {
     auto linespace = m_content->getLinespace();
-    auto value = m_scrollBarV->value();
+    auto vValue = m_scrollBarV->value();
     auto nextLine = line + 1;
 
     relayoutScrollBar();
 
-    if (nextLine * linespace > value + m_content->height()) {
+    if (nextLine * linespace > vValue + m_content->height()) {
         m_scrollBarV->setValue(nextLine * linespace - m_content->height());
     }
-    if (line * linespace < value) {
+    if (line * linespace < vValue) {
         m_scrollBarV->setValue(line * linespace);
     }
 
-    auto checkResult = m_content->checkPosition(line, column);
-    if (checkResult != 0) {
-        auto delta = checkResult * m_content->width() / 2.f;
-        auto value = m_scrollBarH->value();
-        m_scrollBarH->setValue(value + delta);
+    auto scrollOriginX = m_content->getScrollOrigin().x();
+    auto lcwidth = m_content->getWidth(line, column);
+    auto contentWidth = m_content->width();
+    auto averageCharWidth = m_content->getAverageCharWidth();
+
+    if (lcwidth == -1) { // no cache
+        // simple
+        lcwidth = m_content->getAverageWidth(line, column);
+    }
+    auto delta = lcwidth - scrollOriginX;
+    if (delta <= 0 || delta >= contentWidth - averageCharWidth) {
+        m_scrollBarH->setValue(qMax(0, int(lcwidth - contentWidth / 2)));
     }
 
     m_content->scrollHandler(line, column);
@@ -113,7 +120,7 @@ void EditView::relayoutScrollBar() {
 
     auto maxLineWidth = m_content->getMaxLineWidth();
     auto maxCharWidth = m_content->getMaxCharWidth();
-    m_scrollBarH->setRange(0, maxLineWidth);
+    m_scrollBarH->setRange(0, maxLineWidth - maxCharWidth);
     m_scrollBarH->setSingleStep(maxCharWidth);
     m_scrollBarH->setPageStep(widgetWidth);
     //auto xOff = m_content->getXOff();

@@ -119,8 +119,8 @@ public:
     int getLinesHeight();
     int getContentHeight();
     int getLinespace();
-    int getMaxCharWidth();
-    int getAverageCharWidth();
+    qreal getMaxCharWidth();
+    qreal getAverageCharWidth();
     QPoint getScrollOrigin();
     int getXOff();
 
@@ -128,9 +128,10 @@ public:
     int getColumn(int line, int x);
 
     int checkLineVisible(int line);
+
     qreal getWidth(int line, int column);
-    int checkPosition(int line, int column);
-    LineColumn posToLineColumn(const QPoint &pos);
+    qreal getAverageWidth(int line, int column);
+    LineColumn getLineColumn(const QPoint &pos);
     ClosedRangeI getVisibleLinesRange(const QRect &bound);
 
     void asyncPaint(int ms = 100);

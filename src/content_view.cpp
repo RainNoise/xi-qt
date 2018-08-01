@@ -109,11 +109,9 @@ void ContentView::sendEdit(const QString &method) {
 ClosedRangeI ContentView::getVisibleLinesRange(const QRect &bound) {
     auto linespace = m_dataSource->fontMetrics->height();
     auto topPad = linespace - m_dataSource->fontMetrics->ascent();
-    //auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
-    //auto yOff = topPad - m_scrollOrigin.y();
 
     auto firstVisible = qMax(0, (int)(std::ceil((bound.y() - topPad + m_scrollOrigin.y()) / linespace)));
-    auto lastVisible = qMax(0, (int)(std::floor((bound.y() + bound.height() - topPad + m_scrollOrigin.y()) / linespace)));
+    auto lastVisible = qMax(0, (int)(std::ceil((bound.y() + bound.height() - topPad + m_scrollOrigin.y()) / linespace)));
 
     return ClosedRangeI(firstVisible, lastVisible);
 }
@@ -304,11 +302,11 @@ int ContentView::getLinespace() {
     return m_dataSource->fontMetrics->height();
 }
 
-int ContentView::getMaxCharWidth() {
+qreal ContentView::getMaxCharWidth() {
     return m_dataSource->fontMetrics->maxWidth();
 }
 
-int ContentView::getAverageCharWidth() {
+qreal ContentView::getAverageCharWidth() {
     return m_dataSource->fontMetrics->averageCharWidth();
 }
 
@@ -352,27 +350,14 @@ qreal ContentView::getWidth(int lineIx, int columnIx) {
         auto textLine = line->assoc();
         if (textLine) {
             return textLine->indexTox(columnIx);
-        } else {
+        } else if (columnIx != 0){
             return -1;
         }
     }
     return 0;
 }
 
-int ContentView::checkPosition(int line, int column) {
-    auto lcwidth = getWidth(line, column);
-    if (lcwidth == -1) return 0;
-
-    auto delta = lcwidth - m_scrollOrigin.x();
-    if (delta <= 0)
-        return -1;
-    else if (delta > width() - getXOff())
-        return 1;
-    else
-        return 0;
-}
-
-LineColumn ContentView::posToLineColumn(const QPoint &pos) {
+LineColumn ContentView::getLineColumn(const QPoint &pos) {
     auto line = getLine(pos.y());
     auto column = getColumn(line, pos.x());
     auto lineCache = m_dataSource->lines->locked();
@@ -393,8 +378,8 @@ void ContentView::scrollY(int y) {
     constexpr auto kMaxPrefetch = 1;
     const int kLines = m_visibleLines * kMaxPrefetch;
 
-    auto first = std::max(0, (int)(std::floor(value / qreal(linespace) + 0.9))); // last line [visible]
-    first = std::min(lines - 1, first);
+    auto first = qMax(0, (int)(std::floor(value / qreal(linespace) + 0.9))); // last line [visible]
+    first = qMin(lines - 1, first);
     if (m_firstLine != first) {
         m_firstLine = first;
         RangeI prefetch(qMax(0, m_firstLine - kLines), qMin(lines, m_firstLine + m_visibleLines + kLines));
@@ -414,8 +399,8 @@ void ContentView::scrollX(int x) {
 }
 
 void ContentView::updateHandler(const QJsonObject &json) {
-    QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
-        m_dataSource->lines->locked()->applyUpdate(json);
+    QtConcurrent::run(QThreadPool::globalInstance(), [this, json]() {
+        this->m_dataSource->lines->locked()->applyUpdate(json);
         emit repaintContentReceived();
     });
     repaint(); // update assoc
@@ -566,7 +551,7 @@ void ContentView::mousePressEvent(QMouseEvent *e) {
     }
 
     setFocus();
-    auto lc = posToLineColumn(e->pos());
+    auto lc = getLineColumn(e->pos());
     if (lc.isValid()) {
         m_connection->sendGesture(m_file->viewId(), lc.line(), lc.column(), "point_select");
         m_drag = true;
@@ -577,7 +562,7 @@ void ContentView::mousePressEvent(QMouseEvent *e) {
 void ContentView::mouseMoveEvent(QMouseEvent *e) {
     if (m_drag) {
         setFocus();
-        auto lc = posToLineColumn(e->pos());
+        auto lc = getLineColumn(e->pos());
         if (lc.isValid())
             m_connection->sendDrag(m_file->viewId(), lc.line(), lc.column(), 0);
         // TODO:
@@ -595,7 +580,7 @@ void ContentView::mouseReleaseEvent(QMouseEvent *e) {
 
 void ContentView::mouseDoubleClickEvent(QMouseEvent *e) {
     setFocus();
-    auto lc = posToLineColumn(e->pos());
+    auto lc = getLineColumn(e->pos());
     if (lc.isValid()) {
         m_mouseDoubleCheckTimer.setSingleShot(true);
         m_mouseDoubleCheckTimer.start(100);
@@ -664,6 +649,11 @@ void ContentView::configChangedHandler(const QJsonObject &changes) {
 void ContentView::repaintContentHandler() {
     //update();
     repaint();
+}
+
+qreal ContentView::getAverageWidth(int line, int column) {
+    Q_UNUSED(line);
+    return getAverageCharWidth() * column;
 }
 
 AsyncPaintTimer::AsyncPaintTimer(QWidget *parent) {

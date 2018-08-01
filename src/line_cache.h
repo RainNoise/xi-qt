@@ -138,10 +138,6 @@ public:
         return nullptr;
     }
 
-    //std::shared_ptr<Line> last() {
-    //    
-    //}
-
     InvalSet cursorInval() {
         InvalSet inval;
         for (auto i = 0; i < m_lines.count(); ++i) {

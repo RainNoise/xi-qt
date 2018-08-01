@@ -36,7 +36,7 @@ void EditWindow::openFile(const QString &viewId, const QString &filePath) {
         view->focusOnEdit();
         return;
     }
-    ResponseHandler handler([=](const QJsonObject &result) {
+    ResponseHandler handler([this, filePath](const QJsonObject &result) {
         //qDebug() << "sendNewView ResponseHandler";
         auto newViewId = result["result"].toString();
         emit newViewIdRecevied(newViewId, filePath);
@@ -252,7 +252,7 @@ void EditWindow::configChangedHandler(const QString &viewId, const QJsonObject &
 }
 
 void EditWindow::defineStyleHandler(const QJsonObject &json) {
-    QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+    QtConcurrent::run(QThreadPool::globalInstance(), [json]() {
         Perference::shared()->styleMap()->locked()->defStyle(json);
     });
 }
@@ -262,11 +262,11 @@ void EditWindow::availableThemesHandler(const QStringList &themes) {
 }
 
 void EditWindow::themeChangedHandler(const QString &name, const QJsonObject &json) {
-    QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
+    QtConcurrent::run(QThreadPool::globalInstance(), [this, name, json]() {
         //qDebug() << "themeChangedHandler";
         Perference::shared()->theme()->locked()->applyUpdate(name, json);
-        auto i = m_router.constBegin();
-        while (i != m_router.constEnd()) {
+        auto i = this->m_router.constBegin();
+        while (i != this->m_router.constEnd()) {
             auto viewId = i.key();
             auto view = dynamic_cast<EditView *>(i.value());
             if (view) view->themeChangedHandler();
