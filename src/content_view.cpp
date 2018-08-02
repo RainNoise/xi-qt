@@ -107,32 +107,21 @@ void ContentView::sendEdit(const QString &method) {
 }
 
 ClosedRangeI ContentView::getVisibleLinesRange(const QRect &bound) {
-    auto linespace = m_dataSource->fontMetrics->height();
-    auto topPad = linespace - m_dataSource->fontMetrics->ascent();
-
-    auto firstVisible = qMax(0, (int)(std::ceil((bound.y() - topPad + m_scrollOrigin.y()) / linespace)));
-    auto lastVisible = qMax(0, (int)(std::ceil((bound.y() + bound.height() - topPad + m_scrollOrigin.y()) / linespace)));
-
+    auto linespace = getLinespace();
+    auto firstVisible = qMax(0, (int)(std::ceil((bound.y() - m_padding.top() + m_scrollOrigin.y()) / linespace)));
+    auto lastVisible = qMax(0, (int)(std::ceil((bound.y() + bound.height() - m_padding.top() + m_scrollOrigin.y()) / linespace)));
     return ClosedRangeI(firstVisible, lastVisible);
 }
 
 void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
-    // for debug
-    //renderer.drawRect(rect());
-
-    //m_scrollOrigin.setY(-40);	// down
-    //m_scrollOrigin.setY(285);	// up
-    //renderer.fillRect(dirtyRect, QColor(0x272822));  // bg color
-
-    // request cache
     auto lineCache = m_dataSource->lines->locked();
     auto linespace = m_dataSource->fontMetrics->height();
-    auto topPad = linespace - m_dataSource->fontMetrics->ascent();
+    m_padding.setTop(linespace - m_dataSource->fontMetrics->ascent());
     auto xOff = m_dataSource->gutterWidth + m_padding.left() - m_scrollOrigin.x();
-    auto yOff = topPad - m_scrollOrigin.y();
+    auto yOff = m_padding.top() - m_scrollOrigin.y();
 
-    auto firstVisible = qMax(0, (int)(std::ceil((dirtyRect.y() - topPad + m_scrollOrigin.y()) / linespace)));
-    auto lastVisible = qMax(0, (int)(std::ceil((dirtyRect.y() + dirtyRect.height() - topPad + m_scrollOrigin.y()) / linespace)));
+    auto firstVisible = qMax(0, (int)(std::ceil((dirtyRect.y() - m_padding.top() + m_scrollOrigin.y()) / linespace)));
+    auto lastVisible = qMax(0, (int)(std::ceil((dirtyRect.y() + dirtyRect.height() - m_padding.top() + m_scrollOrigin.y()) / linespace)));
 
     auto totalLines = lineCache->height();
 
@@ -180,7 +169,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
             //RangeF yRange(y0, y0 + linespace);
             //Painter::drawLineBg(renderer, textLine, xOff, yRange);
         }
-        maxLineWidth = std::max(maxLineWidth, textLine->width());
+        maxLineWidth = qMax(maxLineWidth, textLine->width());
     }
 
     m_maxLineWidth = maxLineWidth;
@@ -210,7 +199,7 @@ void ContentView::paint(QPainter &renderer, const QRect &dirtyRect) {
         auto line = lines[relLineIx];
         if (textLine && line) {
             auto y0 = yOff + m_dataSource->fontMetrics->ascent() - linespace + linespace * lineIx;
-            auto cursors = line->getCursor().get();
+            auto cursors = line->getCursor();
             foreach (int cursor, *cursors) {
                 auto x0 = xOff + textLine->indexTox(cursor) - 0.5f;
                 Painter::drawCursor(renderer, x0, y0, 2, linespace, theme->caret());
@@ -280,12 +269,6 @@ int ContentView::getLines() {
     return m_dataSource->lines->height();
 }
 
-qreal ContentView::getTopPad() {
-    auto linespace = m_dataSource->fontMetrics->height();
-    auto topPad = linespace - m_dataSource->fontMetrics->ascent();
-    return topPad;
-}
-
 qreal ContentView::getMaxLineWidth() {
     return m_maxLineWidth;
 }
@@ -295,7 +278,7 @@ int ContentView::getLinesHeight() {
 }
 
 int ContentView::getContentHeight() {
-    return getLinesHeight() + getTopPad();
+    return getLinesHeight() + m_padding.top();
 }
 
 int ContentView::getLinespace() {
@@ -319,7 +302,7 @@ int ContentView::getXOff() {
 }
 
 int ContentView::getLine(int y) {
-    return qMax(0, (int)(m_scrollOrigin.y() + y - getTopPad()) / getLinespace());
+    return qMax(0, (int)(m_scrollOrigin.y() + y - m_padding.top()) / getLinespace());
 }
 
 int ContentView::getColumn(int line, int x) {
@@ -370,7 +353,7 @@ LineColumn ContentView::getLineColumn(const QPoint &pos) {
 }
 
 void ContentView::scrollY(int y) {
-    auto value = y - getTopPad();
+    auto value = y - m_padding.top();
     auto linespace = getLinespace();
     auto lines = getLines();
     if (lines == 0) return;
@@ -654,6 +637,14 @@ void ContentView::repaintContentHandler() {
 qreal ContentView::getAverageWidth(int line, int column) {
     Q_UNUSED(line);
     return getAverageCharWidth() * column;
+}
+
+qreal ContentView::getAscent() {
+    return m_dataSource->fontMetrics->ascent();
+}
+
+QMarginsF ContentView::getPadding() {
+    return m_padding;
 }
 
 AsyncPaintTimer::AsyncPaintTimer(QWidget *parent) {

@@ -34,7 +34,7 @@ public:
         return m_pair.second == m_pair.first;
     }
 
-private:
+protected:
     QPair<T, T> m_pair;
 };
 
@@ -70,7 +70,7 @@ public:
         return m_pair.second < m_pair.first;
     }
 
-private:
+protected:
     QPair<T, T> m_pair;
 };
 

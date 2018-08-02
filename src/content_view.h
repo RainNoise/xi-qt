@@ -114,8 +114,9 @@ protected:
 public:
     std::shared_ptr<File> getFile() const;
     int getLines();
-    qreal getTopPad();
+    qreal getAscent();
     qreal getMaxLineWidth();
+    QMarginsF getPadding();
     int getLinesHeight();
     int getContentHeight();
     int getLinespace();
@@ -190,7 +191,7 @@ public:
     void cut();
     void paste();
 
-signals:    
+signals:
     void repaintContentReceived();
 
 public slots:
@@ -222,6 +223,12 @@ private:
     QTimer m_mouseDoubleCheckTimer;
     std::unique_ptr<AsyncPaintTimer> m_asyncPaintTimer;
     QQueue<qint64> m_asyncPaintQueue;
+};
+
+class ContentViewOpenGL : public QOpenGLWidget, protected QOpenGLFunctions {
+public:
+    
+private:
 };
 
 } // namespace xi
