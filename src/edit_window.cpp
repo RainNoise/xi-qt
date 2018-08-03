@@ -18,6 +18,8 @@ namespace xi {
 static const char *UNTITLED_NAME = "untitled";
 
 EditWindow::EditWindow(QWidget *parent) : QTabWidget(parent) {
+    setContentsMargins(0, 0, 0, 0);
+
     setupShortcuts();
     connect(this, &EditWindow::newViewIdRecevied, this, &EditWindow::newViewIdHandler);
 }
@@ -37,9 +39,8 @@ void EditWindow::openFile(const QString &viewId, const QString &filePath) {
         return;
     }
     ResponseHandler handler([this, filePath](const QJsonObject &result) {
-        //qDebug() << "sendNewView ResponseHandler";
         auto newViewId = result["result"].toString();
-        emit newViewIdRecevied(newViewId, filePath);
+        emit this->newViewIdRecevied(newViewId, filePath);
     });
     m_connection->sendNewView(filePath, handler);
 }

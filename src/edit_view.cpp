@@ -18,9 +18,12 @@
 #include "content_view.h"
 #include "edit_window.h"
 #include "perference.h"
+#include "shortcuts.h"
 #include "text_line.h"
 
 namespace xi {
+
+static const char *FPS_FONT = "Inconsolata";
 
 EditView::EditView(const std::shared_ptr<File> &file, const std::shared_ptr<CoreConnection> &connection, QWidget *parent) : QWidget(parent) {
 
@@ -29,6 +32,7 @@ EditView::EditView(const std::shared_ptr<File> &file, const std::shared_ptr<Core
     setAttribute(Qt::WA_StaticContents);
     setAttribute(Qt::WA_Resized);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    setContentsMargins(0, 0, 0, 0);
 
     m_content = new ContentView(file, connection, this);
     m_scrollBarV = new QScrollBar(this);
@@ -50,6 +54,20 @@ EditView::EditView(const std::shared_ptr<File> &file, const std::shared_ptr<Core
     //auto scrollBarStyle = qss.readAll();
     //m_scrollBarV->setStyleSheet(scrollBarStyle);
     //m_scrollBarH->setStyleSheet(scrollBarStyle);
+
+    m_scrollTester = std::make_unique<ScrollTester>(this);
+
+    auto seq = QKeySequence("F8");
+    Shortcuts::shared()->append(this, seq, [&](QShortcut *shortcut) {
+        shortcut->setContext(Qt::WidgetWithChildrenShortcut);
+        connect(shortcut, &QShortcut::activated,
+                this, &EditView::scrollTester);
+    });
+
+    m_fpsCounter = new FpsCounterWidget(this);
+}
+
+EditView::~EditView() {
 }
 
 void EditView::updateHandler(const QJsonObject &json) {
@@ -100,6 +118,12 @@ void EditView::configChangedHandler(const QJsonObject &changes) {
 
 void EditView::resizeEvent(QResizeEvent *event) {
     relayoutScrollBar();
+
+    auto viewrc = rect();
+    auto textWidth = m_fpsCounter->getAverageCharWidth() * 3;
+    QRect fpsrc(viewrc.width() - textWidth - m_scrollBarV->width(), 0, textWidth, m_fpsCounter->getContentHeight());
+    m_fpsCounter->setGeometry(fpsrc);
+
     QWidget::resizeEvent(event);
 }
 
@@ -148,6 +172,10 @@ void EditView::focusOnEdit() {
     //m_content->update();
 }
 
+void EditView::tick() {
+    m_fpsCounter->tick();
+}
+
 void EditView::scrollBarVChanged(int y) {
     m_content->scrollY(y);
     relayoutScrollBar();
@@ -156,6 +184,114 @@ void EditView::scrollBarVChanged(int y) {
 void EditView::scrollBarHChanged(int x) {
     m_content->scrollX(x);
     relayoutScrollBar();
+}
+
+void EditView::scrollTester() {
+    m_scrollTester->mode();
+}
+
+ScrollTester::ScrollTester(EditView *view) : m_view(view) {
+    m_timer = std::make_unique<QTimer>(this);
+    connect(m_timer.get(), &QTimer::timeout, this, &ScrollTester::update);
+}
+
+ScrollTester::~ScrollTester() {
+    m_timer->stop();
+    m_state = NotRunning;
+}
+
+void ScrollTester::mode() {
+    if (m_state == NotRunning) {
+        m_timer->start(5);
+        m_state = Running;
+    } else if (m_state == Running) {
+        m_timer->stop();
+        m_state = NotRunning;
+    }
+}
+
+void ScrollTester::update() {
+    auto value = m_view->m_scrollBarV->value();
+    if (value == m_view->m_scrollBarV->maximum()) {
+        m_direction = Up;
+    } else if (value == m_view->m_scrollBarV->minimum()) {
+        m_direction = Down;
+    }
+    auto linespace = m_view->m_content->getLinespace();
+    auto lines = linespace * 10;
+    auto delta = m_direction == Down ? lines : -lines;
+    m_view->m_scrollBarV->setValue(value + delta);
+}
+
+FpsCounterWidget::FpsCounterWidget(QWidget *parent /*= nullptr*/) : QWidget(parent) {
+
+    //setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_TransparentForMouseEvents);
+    setAttribute(Qt::WA_InputMethodTransparent);
+
+    m_view = dynamic_cast<EditView *>(parent);
+    m_timer = std::make_unique<QTimer>(this);
+    connect(m_timer.get(), &QTimer::timeout, this, &FpsCounterWidget::update);
+    m_timer->start(100);
+
+    QString family = FPS_FONT;
+    int size = 11;
+    int weight = QFont::Normal;
+    bool italic = false;
+    QFont font(family, size, weight, italic);
+    font.setStyleHint(QFont::Monospace, QFont::StyleStrategy(QFont::PreferDefault | QFont::ForceIntegerMetrics));
+    font.setFixedPitch(true);
+    font.setKerning(false);
+    setFont(font);
+    m_metrics = std::make_unique<QFontMetrics>(font);
+
+    setContentsMargins(0, 0, 0, 0);
+}
+
+void FpsCounterWidget::update() {
+    m_tickCache = m_tick;
+    m_tick = 0;
+    m_update = true;
+    repaint();
+}
+
+void FpsCounterWidget::paintEvent(QPaintEvent *event) {
+    Q_UNUSED(event);
+    QPainter painter(this);
+    if (m_update) {
+        using namespace std::chrono;
+        auto timestamp = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
+        auto timeDuration = (timestamp - m_current); // /1000000.f
+        auto fps = std::ceil(qreal(m_tickCache) * 1000000 / timeDuration);
+        m_current = timestamp;
+        m_update = false;
+        if (fps != 0)
+            m_fpsCache = fps;
+    }
+    auto bgrc = rect();
+    QString fpsString = QString::number(m_fpsCache);
+
+    // 1, 80, 198
+    // 128, 128, 128
+    painter.fillRect(bgrc, QColor::fromRgb(1, 80, 198, 255));
+    painter.setPen(QColor::fromRgb(255, 255, 255, 255));
+    painter.drawText(QPoint(bgrc.left(), m_metrics->ascent()), fpsString);
+}
+
+void FpsCounterWidget::resizeEvent(QResizeEvent *event) {
+    QWidget::resizeEvent(event);
+}
+
+void FpsCounterWidget::tick() {
+    ++m_tick;
+}
+
+int FpsCounterWidget::getContentHeight() {
+    return m_metrics->height();
+}
+
+int FpsCounterWidget::getAverageCharWidth() {
+    return m_metrics->averageCharWidth();
 }
 
 } // namespace xi

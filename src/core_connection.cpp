@@ -18,6 +18,7 @@ CoreConnection::~CoreConnection() {
     m_readCoreThread.quit();
     m_readCoreThread.wait();
 #endif
+
 }
 
 void CoreConnection::init() {
@@ -27,7 +28,7 @@ void CoreConnection::init() {
     m_recvStderrBuf = std::make_unique<QBuffer>();
     m_recvStderrBuf->open(QBuffer::ReadWrite);
 
-    m_process.reset(new QProcess, [](QProcess *p) { p->close(); delete p; });
+    m_process.reset(new QProcess, [](QProcess *p) { p->close(); p->waitForFinished(); delete p; });
 
 #ifdef ENABLE_IO_THREADS
     m_writeQueue = std::make_shared<CoreQueue>();
@@ -306,7 +307,7 @@ void CoreConnection::handleRawInner(const QByteArray &bytes) {
 
 void CoreConnection::handleRaw(const QByteArray &bytes) {
     //QtConcurrent::run(QThreadPool::globalInstance(), [=]() {
-        handleRawInner(bytes);
+    handleRawInner(bytes);
     //});
 }
 

@@ -21,7 +21,7 @@
 #include "line_cache.h"
 
 //! TODO: OPENGL VSYNC FPS
-//#define ENABLE_GPU_RENDERING
+#define ENABLE_GPU_RENDERING
 
 namespace xi {
 
@@ -108,8 +108,11 @@ protected:
     virtual void mouseReleaseEvent(QMouseEvent *e) override;
     virtual void mouseDoubleClickEvent(QMouseEvent *e) override;
 
+    // virtual void resizeGL(int w, int h) override;
+
     void paint(QPainter &renderer, const QRect &dirtyRect);
     void initSelectCommand();
+    void tick();
 
 public:
     std::shared_ptr<File> getFile() const;
@@ -225,9 +228,9 @@ private:
     QQueue<qint64> m_asyncPaintQueue;
 };
 
+// focus performance
 class ContentViewOpenGL : public QOpenGLWidget, protected QOpenGLFunctions {
 public:
-    
 private:
 };
 

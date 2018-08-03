@@ -7,9 +7,11 @@
 int main(int argc, char *argv[]) {
     Q_INIT_RESOURCE(xi);
 
-    QSurfaceFormat fmt;
-    fmt.setSamples(4);
-    QSurfaceFormat::setDefaultFormat(fmt);
+    QSurfaceFormat format;
+    format.setSamples(4);
+    format.setSwapInterval(0); // disable vsync
+    format.setDepthBufferSize(24);
+    QSurfaceFormat::setDefaultFormat(format);
 
     QApplication a(argc, argv);
     xi::XiMainWindow w;

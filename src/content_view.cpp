@@ -7,10 +7,13 @@
 #include <QtConcurrent>
 
 #include "config.h"
+#include "edit_view.h"
 #include "perference.h"
 #include "theme.h"
 
 namespace xi {
+
+static const char *CONTENT_FONT = "Inconsolata";
 
 ContentView::ContentView(
     const std::shared_ptr<File> &file,
@@ -81,6 +84,7 @@ void ContentView::paintEvent(QPaintEvent *event) {
     auto dirtyRect = event->rect(); //simple
     paint(painter, dirtyRect);
 #endif
+    tick();
 }
 
 void ContentView::resizeEvent(QResizeEvent *event) {
@@ -333,7 +337,7 @@ qreal ContentView::getWidth(int lineIx, int columnIx) {
         auto textLine = line->assoc();
         if (textLine) {
             return textLine->indexTox(columnIx);
-        } else if (columnIx != 0){
+        } else if (columnIx != 0) {
             return -1;
         }
     }
@@ -647,6 +651,11 @@ QMarginsF ContentView::getPadding() {
     return m_padding;
 }
 
+void ContentView::tick() {
+    auto editView = dynamic_cast<EditView *>(parent());
+    editView->tick();
+}
+
 AsyncPaintTimer::AsyncPaintTimer(QWidget *parent) {
     m_timer = std::make_unique<QTimer>(this);
     m_timer->start(10);
@@ -665,9 +674,9 @@ DataSource::DataSource() {
     lines = std::make_shared<LineCache>();
     config = std::make_shared<Config>();
     {
-        QString family = "Inconsolata";
-        int size = 13;              // 1920x1080
-        int weight = QFont::Normal; // OpenType weight value
+        QString family = CONTENT_FONT;
+        int size = 13;
+        int weight = QFont::Normal;
         bool italic = false;
         QFont font(family, size, weight, italic);
         // PreferQuality PreferDefault PreferAntialias
