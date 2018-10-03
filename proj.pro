@@ -24,10 +24,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
-        main.cpp \
-        mainwindow.cpp \
-        xibridge.cpp \
-        editor.cpp \
     editor.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -43,9 +39,6 @@ SOURCES += \
     fontconfig.cpp
 
 HEADERS += \
-        mainwindow.h \
-        xibridge.h \
-        editor.h \
     editor.h \
     mainwindow.h \
     xibridge.h \
